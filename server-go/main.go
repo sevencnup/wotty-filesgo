@@ -88,27 +88,35 @@ func main() {
 	})
 
 	// Serve Static Files (Embedded Frontend)
-	// Sub FS for dist folder
 	distFS, err := fs.Sub(frontendAssets, "dist")
 	if err != nil {
 		log.Fatal("Failed to load embedded assets:", err)
 	}
 
-	// Serve assets
-	r.StaticFS("/assets", http.FS(distFS))
-
-	// Serve index.html and other root files
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
 
-		// If requesting a specific file like favicon.ico or logo.png
-		if path == "/favicon.ico" || path == "/logo.png" {
-			c.FileFromFS(path, http.FS(distFS))
+		// 如果是 API 请求，返回 404
+		if strings.HasPrefix(path, "/api") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "API route not found"})
 			return
 		}
 
-		// Default to index.html for SPA
-		c.FileFromFS("/", http.FS(distFS))
+		// 去掉开头的斜杠
+		filePath := strings.TrimPrefix(path, "/")
+		if filePath == "" {
+			filePath = "index.html"
+		}
+
+		// 尝试从嵌入的 dist 目录读取文件
+		_, err := fs.Stat(distFS, filePath)
+		if err == nil {
+			c.FileFromFS(filePath, http.FS(distFS))
+			return
+		}
+
+		// 如果文件不存在，返回 index.html (支持 SPA 路由)
+		c.FileFromFS("index.html", http.FS(distFS))
 	})
 
 	// API Routes
