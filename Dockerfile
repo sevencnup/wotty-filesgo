@@ -5,12 +5,12 @@ RUN cargo build --release
 
 FROM golang:1.24-bookworm as gobuilder
 WORKDIR /app/server
-COPY server-go/go.mod server-go/go.sum ./
 RUN go env -w GOPROXY=https://goproxy.cn,direct
 RUN apt-get update && apt-get install -y build-essential pkg-config libsqlite3-dev && rm -rf /var/lib/apt/lists/*
+COPY server-go/go.mod server-go/go.sum ./
 RUN go mod download
 COPY server-go/ .
-RUN CGO_ENABLED=1 go build -o cloud-server main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -v -o cloud-server .
 
 FROM debian:bookworm-slim
 WORKDIR /app
