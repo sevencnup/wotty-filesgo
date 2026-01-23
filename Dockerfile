@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y libsqlite3-0 ca-certificates && rm -rf 
 COPY --from=gobuilder /app/server/cloud-server /app/cloud-server
 COPY --from=gobuilder /app/server/dist /app/dist
 COPY --from=rustbuilder /app/worker/target/release/worker-rust /app/worker-rust
+RUN chmod +x /app/cloud-server /app/worker-rust
 ENV GIN_MODE=release
 EXPOSE 8080 8081
-CMD bash -c "./worker-rust & ./cloud-server"
+CMD ["sh", "-c", "./worker-rust & ./cloud-server"]
