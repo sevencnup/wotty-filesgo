@@ -15,7 +15,6 @@ export function PageTransition({ children }: PageTransitionProps) {
   const [currentChildren, setCurrentChildren] = useState(children)
   const [previousChildren, setPreviousChildren] = useState<ReactNode | null>(null)
   const [transitionStage, setTransitionStage] = useState<'idle' | 'from' | 'to'>('idle')
-  const [direction, setDirection] = useState<'left' | 'right'>('left')
   const prevPathRef = useRef(pathname)
   const isInitialMount = useRef(true)
   const currentChildrenRef = useRef(children)
@@ -62,21 +61,6 @@ export function PageTransition({ children }: PageTransitionProps) {
       return
     }
 
-    const prevPath = prevPathRef.current
-    const currentPath = pathname
-
-    if (prevPath === '/' && (currentPath === '/chat' || currentPath === '/device')) {
-      setDirection('left')
-    } else if ((prevPath === '/chat' || prevPath === '/device') && currentPath === '/') {
-      setDirection('right')
-    } else if (prevPath === '/chat' && currentPath === '/device') {
-      setDirection('left')
-    } else if (prevPath === '/device' && currentPath === '/chat') {
-      setDirection('right')
-    } else {
-      setDirection('left')
-    }
-
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current)
       rafIdRef.current = null
@@ -117,8 +101,8 @@ export function PageTransition({ children }: PageTransitionProps) {
   }, [pathname, children, prefersReducedMotion])
 
   const transition = `transform ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASING}`
-  const incomingX = direction === 'left' ? '100%' : '-100%'
-  const outgoingX = direction === 'left' ? '-100%' : '100%'
+  const incomingX = '100%'
+  const outgoingX = '-100%'
 
   const layerBase: CSSProperties = {
     position: 'absolute',
