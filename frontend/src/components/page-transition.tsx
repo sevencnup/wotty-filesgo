@@ -9,7 +9,6 @@ interface PageTransitionProps {
 
 const PAGE_TRANSITION_MS = 420
 const PAGE_TRANSITION_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)'
-const PAGE_TRANSITION_SHIFT_PX = 28
 
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname()
@@ -117,16 +116,16 @@ export function PageTransition({ children }: PageTransitionProps) {
     }
   }, [pathname, children, prefersReducedMotion])
 
-  const transition = `transform ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASING}, opacity ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASING}`
-  const incomingOffset = direction === 'left' ? PAGE_TRANSITION_SHIFT_PX : -PAGE_TRANSITION_SHIFT_PX
-  const outgoingOffset = -incomingOffset
+  const transition = `transform ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASING}`
+  const incomingX = direction === 'left' ? '100%' : '-100%'
+  const outgoingX = direction === 'left' ? '-100%' : '100%'
 
   const layerBase: CSSProperties = {
     position: 'absolute',
     inset: 0,
     width: '100%',
     height: '100%',
-    willChange: 'transform, opacity',
+    willChange: 'transform',
     backfaceVisibility: 'hidden',
     transform: 'translate3d(0, 0, 0)',
   }
@@ -137,8 +136,7 @@ export function PageTransition({ children }: PageTransitionProps) {
     if (transitionStage === 'from') {
       return {
         ...layerBase,
-        opacity: 1,
-        transform: 'translate3d(0, 0, 0) scale(1)',
+        transform: 'translate3d(0, 0, 0)',
         transition: 'none',
         pointerEvents: 'none',
       }
@@ -147,8 +145,7 @@ export function PageTransition({ children }: PageTransitionProps) {
     if (transitionStage === 'to') {
       return {
         ...layerBase,
-        opacity: 0,
-        transform: `translate3d(${outgoingOffset}px, 0, 0) scale(0.98)`,
+        transform: `translate3d(${outgoingX}, 0, 0)`,
         transition,
         pointerEvents: 'none',
       }
@@ -161,8 +158,7 @@ export function PageTransition({ children }: PageTransitionProps) {
     if (transitionStage === 'from' && previousChildren) {
       return {
         ...layerBase,
-        opacity: 0,
-        transform: `translate3d(${incomingOffset}px, 0, 0) scale(0.98)`,
+        transform: `translate3d(${incomingX}, 0, 0)`,
         transition: 'none',
       }
     }
@@ -170,16 +166,14 @@ export function PageTransition({ children }: PageTransitionProps) {
     if (transitionStage === 'to' && previousChildren) {
       return {
         ...layerBase,
-        opacity: 1,
-        transform: 'translate3d(0, 0, 0) scale(1)',
+        transform: 'translate3d(0, 0, 0)',
         transition,
       }
     }
 
     return {
       ...layerBase,
-      opacity: 1,
-      transform: 'translate3d(0, 0, 0) scale(1)',
+      transform: 'translate3d(0, 0, 0)',
       transition: 'none',
     }
   })()
