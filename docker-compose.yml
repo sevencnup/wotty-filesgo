@@ -8,6 +8,6 @@ services:
       - "8080:8080"
     volumes:
       - ./data/uploads:/app/uploads
-      - ./data/cloud.db:/app/cloud.db
+      - ./data/filesgo.db:/app/filesgo.db
     environment:
       - GIN_MODE=release

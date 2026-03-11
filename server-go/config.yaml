@@ -1,0 +1,17 @@
+# FilesGo 配置文件
+# 上传密码：防止服务器被滥用上传
+upload_password: "filesgo.."
+
+# 服务器配置
+server:
+  port: 8080
+
+# 文件保留时间
+retention:
+  initial_hours: 2    # 上传后保留时间（小时）
+  after_download_hours: 2  # 首次下载后保留时间（小时）
+  max_lifetime_hours: 2    # 最大存活时间（小时），上传后不管是否取件都强制删除
+
+# 上传频率限制
+rate_limit:
+  max_uploads_per_day: 2    # 每个IP每天最多上传次数（0表示不限制）

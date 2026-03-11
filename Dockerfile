@@ -10,15 +10,15 @@ RUN apt-get update && apt-get install -y build-essential pkg-config libsqlite3-d
 COPY server-go/go.mod server-go/go.sum ./
 RUN go mod download
 COPY server-go/ .
-RUN CGO_ENABLED=1 GOOS=linux go build -v -o cloud-server .
+RUN CGO_ENABLED=1 GOOS=linux go build -v -o filesgo-server .
 
 FROM debian:bookworm-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y libsqlite3-0 ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=gobuilder /app/server/cloud-server /app/cloud-server
+COPY --from=gobuilder /app/server/filesgo-server /app/filesgo-server
 COPY --from=gobuilder /app/server/dist /app/dist
 COPY --from=rustbuilder /app/worker/target/release/worker-rust /app/worker-rust
-RUN chmod +x /app/cloud-server /app/worker-rust
+RUN chmod +x /app/filesgo-server /app/worker-rust
 ENV GIN_MODE=release
 EXPOSE 8080 8081
-CMD ["sh", "-c", "./worker-rust & ./cloud-server"]
+CMD ["sh", "-c", "./worker-rust & ./filesgo-server"]

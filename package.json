@@ -1,18 +1,22 @@
 {
-  "name": "cloud-system-root",
+  "name": "filesgo-system-root",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:go\"",
     "dev:frontend": "cd frontend && npm install && npm run dev",
     "dev:go": "cd server-go && go run .",
+    "dev:graphics": "cd Graphics && npm install && npm run dev",
+    "dev:all": "concurrently \"npm run dev:frontend\" \"npm run dev:go\" \"npm run dev:graphics\"",
     "dev:rust": "echo Rust worker skipped (optional)",
     "build": "npm run build:frontend && npm run build:prep && npm run build:go",
     "build:frontend": "cd frontend && npm run build",
+    "build:graphics": "cd Graphics && npm run build",
     "build:prep": "powershell -Command \"Remove-Item -Recurse -Force server-go/dist -ErrorAction SilentlyContinue; Copy-Item -Recurse frontend/dist server-go/dist\"",
-    "build:go": "cd server-go && go build -o cloud-server.exe"
+    "build:go": "cd server-go && go build -o filesgo-server.exe"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.0",
+    "cross-env": "^10.1.0"
   }
 }
