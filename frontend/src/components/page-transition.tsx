@@ -20,22 +20,6 @@ export function PageTransition({ children }: PageTransitionProps) {
   const currentChildrenRef = useRef(children)
   const rafIdRef = useRef<number | null>(null)
   const timerIdRef = useRef<number | null>(null)
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-
-    const update = () => setPrefersReducedMotion(media.matches)
-    update()
-
-    if (media.addEventListener) {
-      media.addEventListener('change', update)
-      return () => media.removeEventListener('change', update)
-    }
-
-    media.addListener(update)
-    return () => media.removeListener(update)
-  }, [])
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -47,15 +31,6 @@ export function PageTransition({ children }: PageTransitionProps) {
     }
 
     if (prevPathRef.current === pathname) {
-      setCurrentChildren(children)
-      currentChildrenRef.current = children
-      return
-    }
-
-    if (prefersReducedMotion) {
-      prevPathRef.current = pathname
-      setPreviousChildren(null)
-      setTransitionStage('idle')
       setCurrentChildren(children)
       currentChildrenRef.current = children
       return
@@ -98,7 +73,7 @@ export function PageTransition({ children }: PageTransitionProps) {
         timerIdRef.current = null
       }
     }
-  }, [pathname, children, prefersReducedMotion])
+  }, [pathname, children])
 
   const transition = `transform ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASING}`
   const incomingX = '100%'
