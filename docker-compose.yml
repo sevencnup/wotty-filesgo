@@ -9,5 +9,7 @@ services:
     volumes:
       - ./data/uploads:/app/uploads
       - ./data/filesgo.db:/app/filesgo.db
+      - ./config.yaml:/app/config.yaml
     environment:
       - GIN_MODE=release
+    restart: unless-stopped

@@ -1,24 +1,16 @@
-FROM rust:1.75 as rustbuilder
-WORKDIR /app/worker
-COPY worker-rust/ .
-RUN cargo build --release
-
-FROM golang:1.24-bookworm as gobuilder
-WORKDIR /app/server
-RUN go env -w GOPROXY=https://goproxy.cn,direct
+FROM rust:1.75 as builder
+WORKDIR /app
 RUN apt-get update && apt-get install -y build-essential pkg-config libsqlite3-dev && rm -rf /var/lib/apt/lists/*
-COPY server-go/go.mod server-go/go.sum ./
-RUN go mod download
-COPY server-go/ .
-RUN CGO_ENABLED=1 GOOS=linux go build -v -o filesgo-server .
+COPY server-rust/Cargo.toml server-rust/Cargo.lock ./
+COPY server-rust/src ./src
+COPY server-rust/config.yaml ./
+RUN cargo build --release
 
 FROM debian:bookworm-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y libsqlite3-0 ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=gobuilder /app/server/filesgo-server /app/filesgo-server
-COPY --from=gobuilder /app/server/dist /app/dist
-COPY --from=rustbuilder /app/worker/target/release/worker-rust /app/worker-rust
-RUN chmod +x /app/filesgo-server /app/worker-rust
+COPY --from=builder /app/target/release/server-rust /app/filesgo-server
+COPY --from=builder /app/config.yaml ./
+EXPOSE 8080
 ENV GIN_MODE=release
-EXPOSE 8080 8081
-CMD ["sh", "-c", "./worker-rust & ./filesgo-server"]
+CMD ["./filesgo-server"]

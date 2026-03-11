@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
   ],
   build: {
-    outDir: '../server-rust/dist',
+    outDir: '../server-go/dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
