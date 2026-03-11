@@ -1,4 +1,6 @@
 {
-  "/page": "app/page.js",
-  "/chat/page": "app/chat/page.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/chat/page": "app/chat/page.js",
+  "/device/page": "app/device/page.js",
+  "/page": "app/page.js"
 }

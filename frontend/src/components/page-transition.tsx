@@ -1,84 +1,81 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-
-type TransitionType = 'slide-left' | 'slide-right' | 'none'
+import { useEffect, useState, useRef, ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 
 interface PageTransitionProps {
-  children: React.ReactNode
+  children: ReactNode
 }
+
+type TransitionState = 'entering' | 'entered' | 'exiting' | 'exited'
 
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname()
-  const router = useRouter()
-  const [transitionType, setTransitionType] = useState<TransitionType>('none')
-  const [isAnimating, setIsAnimating] = useState(false)
+  const [displayChildren, setDisplayChildren] = useState(children)
+  const [transitionState, setTransitionState] = useState<TransitionState>('entered')
   const prevPathRef = useRef(pathname)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [direction, setDirection] = useState<'left' | 'right'>('left')
 
   useEffect(() => {
     if (prevPathRef.current !== pathname) {
       const prevPath = prevPathRef.current
       const currentPath = pathname
 
-      if (prevPath === '/' && currentPath === '/chat') {
-        setTransitionType('slide-left')
-      } else if (prevPath === '/chat' && currentPath === '/') {
-        setTransitionType('slide-right')
+      if (prevPath === '/' && (currentPath === '/chat' || currentPath === '/device')) {
+        setDirection('left')
+      } else if ((prevPath === '/chat' || prevPath === '/device') && currentPath === '/') {
+        setDirection('right')
+      } else if (prevPath === '/chat' && currentPath === '/device') {
+        setDirection('left')
+      } else if (prevPath === '/device' && currentPath === '/chat') {
+        setDirection('right')
       } else {
-        setTransitionType('none')
+        setDirection('left')
       }
 
-      setIsAnimating(true)
+      setTransitionState('exiting')
+      
+      const exitTimer = setTimeout(() => {
+        setDisplayChildren(children)
+        setTransitionState('entering')
+        
+        requestAnimationFrame(() => {
+          setTransitionState('entered')
+        })
+      }, 150)
+
       prevPathRef.current = pathname
 
-      const timer = setTimeout(() => {
-        setIsAnimating(false)
-        setTransitionType('none')
-      }, 300)
-
-      return () => clearTimeout(timer)
+      return () => clearTimeout(exitTimer)
+    } else {
+      setDisplayChildren(children)
     }
-  }, [pathname])
+  }, [pathname, children])
 
-  const getTransitionClass = () => {
-    if (!isAnimating) return 'translate-x-0 opacity-100'
+  const getTransitionClasses = () => {
+    const baseClasses = 'transition-all duration-150 ease-out'
     
-    switch (transitionType) {
-      case 'slide-left':
-        return 'animate-slide-in-left'
-      case 'slide-right':
-        return 'animate-slide-in-right'
+    switch (transitionState) {
+      case 'exiting':
+        return direction === 'left' 
+          ? `${baseClasses} -translate-x-8 opacity-0`
+          : `${baseClasses} translate-x-8 opacity-0`
+      case 'entering':
+        return direction === 'left'
+          ? `${baseClasses} translate-x-8 opacity-0`
+          : `${baseClasses} -translate-x-8 opacity-0`
+      case 'entered':
+        return `${baseClasses} translate-x-0 opacity-100`
       default:
-        return 'translate-x-0 opacity-100'
+        return `${baseClasses} translate-x-0 opacity-100`
     }
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={`w-full h-full transition-all duration-300 ease-out ${getTransitionClass()}`}
-      style={{
-        willChange: isAnimating ? 'transform, opacity' : 'auto'
-      }}
-    >
-      {children}
+    <div className="w-full h-full overflow-hidden">
+      <div className={getTransitionClasses()}>
+        {displayChildren}
+      </div>
     </div>
   )
-}
-
-export function usePageTransition() {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [isTransitioning, setIsTransitioning] = useState(false)
-
-  const navigateTo = (path: string) => {
-    if (isTransitioning) return
-    setIsTransitioning(true)
-    router.push(path)
-    setTimeout(() => setIsTransitioning(false), 300)
-  }
-
-  return { navigateTo, isTransitioning }
 }
