@@ -20,7 +20,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/logo.png" />
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} h-screen overflow-hidden`}>
         <PageTransition>
           {children}
         </PageTransition>

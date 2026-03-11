@@ -345,7 +345,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col relative overflow-hidden">
+    <div className="h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/50 rounded-full blur-3xl opacity-60 mix-blend-multiply filter"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-slate-200/50 rounded-full blur-3xl opacity-60 mix-blend-multiply filter"></div>
