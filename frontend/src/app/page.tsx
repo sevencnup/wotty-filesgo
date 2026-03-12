@@ -56,6 +56,8 @@ export default function HomePage() {
   const [isUploading, setIsUploading] = useState(false)
   const [currentUpload, setCurrentUpload] = useState<any>(null)
   const [progress, setProgress] = useState(0)
+  const [uploadSpeedBps, setUploadSpeedBps] = useState<number | null>(null)
+  const [uploadEtaSec, setUploadEtaSec] = useState<number | null>(null)
   const [receiveCode, setReceiveCode] = useState('')
   const [receiveStatus, setReceiveStatus] = useState({ text: '', type: '' })
   const [isDownloading, setIsDownloading] = useState(false)
@@ -63,7 +65,64 @@ export default function HomePage() {
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const xhrRef = useRef<XMLHttpRequest | null>(null)
+  const progressTargetRef = useRef(0)
+  const progressRafRef = useRef<number | null>(null)
+  const progressDisplayRef = useRef(0)
+  const uploadSamplesRef = useRef<{ t: number; loaded: number; total: number }[]>([])
+  const uploadMetaLastUpdateRef = useRef(0)
   const t = translations.zh
+
+  useEffect(() => {
+    progressDisplayRef.current = progress
+  }, [progress])
+
+  const setDisplayedProgress = useCallback((value: number) => {
+    progressDisplayRef.current = value
+    setProgress(value)
+  }, [])
+
+  const stopProgressAnimation = useCallback(() => {
+    if (progressRafRef.current !== null) {
+      cancelAnimationFrame(progressRafRef.current)
+      progressRafRef.current = null
+    }
+  }, [])
+
+  const startProgressAnimation = useCallback(() => {
+    if (progressRafRef.current !== null) return
+
+    const step = () => {
+      const displayed = progressDisplayRef.current
+      const target = progressTargetRef.current
+
+      let next = displayed
+      if (target > displayed) {
+        const delta = target - displayed
+        const inc = Math.max(0.15, delta * 0.18)
+        next = Math.min(target, displayed + inc)
+      } else if (target < displayed) {
+        next = target
+      }
+
+      if (next !== displayed) {
+        setDisplayedProgress(next)
+      }
+
+      if (Math.abs(target - next) > 0.05) {
+        progressRafRef.current = requestAnimationFrame(step)
+      } else {
+        progressRafRef.current = null
+      }
+    }
+
+    progressRafRef.current = requestAnimationFrame(step)
+  }, [setDisplayedProgress])
+
+  useEffect(() => {
+    return () => {
+      stopProgressAnimation()
+    }
+  }, [stopProgressAnimation])
 
   const showToast = useCallback((message: string, type: string = 'info') => {
     setToast({ message, type })
@@ -76,6 +135,23 @@ export default function HomePage() {
     const sizes = ['B', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const formatSpeed = (bps: number | null) => {
+    if (!bps || bps <= 0) return '--'
+    const k = 1024
+    if (bps < k) return `${Math.round(bps)} B/s`
+    if (bps < k * k) return `${(bps / k).toFixed(1)} KB/s`
+    if (bps < k * k * k) return `${(bps / (k * k)).toFixed(1)} MB/s`
+    return `${(bps / (k * k * k)).toFixed(1)} GB/s`
+  }
+
+  const formatEta = (sec: number | null) => {
+    if (sec === null || !isFinite(sec) || sec < 0) return '--'
+    const s = Math.ceil(sec)
+    const m = Math.floor(s / 60)
+    const r = s % 60
+    return `${m}:${String(r).padStart(2, '0')}`
   }
 
   useEffect(() => {
@@ -210,13 +286,39 @@ export default function HomePage() {
       
       xhr.upload.addEventListener('progress', (e) => {
         if (e.lengthComputable) {
-          const percent = Math.round((e.loaded / e.total) * 100)
-          setProgress(percent)
+          const percent = Math.min(100, Math.max(0, (e.loaded / e.total) * 100))
+          progressTargetRef.current = percent
+          startProgressAnimation()
+
+          const now = performance.now()
+          uploadSamplesRef.current.push({ t: now, loaded: e.loaded, total: e.total })
+          const cutoff = now - 1500
+          uploadSamplesRef.current = uploadSamplesRef.current.filter(s => s.t >= cutoff)
+
+          if (now - uploadMetaLastUpdateRef.current >= 250) {
+            const samples = uploadSamplesRef.current
+            if (samples.length >= 2) {
+              const first = samples[0]
+              const last = samples[samples.length - 1]
+              const dt = (last.t - first.t) / 1000
+              if (dt > 0) {
+                const bps = (last.loaded - first.loaded) / dt
+                setUploadSpeedBps(bps > 0 ? bps : null)
+                setUploadEtaSec(bps > 0 ? (last.total - last.loaded) / bps : null)
+              }
+            }
+            uploadMetaLastUpdateRef.current = now
+          }
         }
       })
 
       xhr.addEventListener('load', () => {
         xhrRef.current = null
+        progressTargetRef.current = 100
+        startProgressAnimation()
+        uploadSamplesRef.current = []
+        setUploadSpeedBps(null)
+        setUploadEtaSec(0)
         try {
           const data = JSON.parse(xhr.responseText)
           if (xhr.status === 200 && data.code) {
@@ -231,17 +333,29 @@ export default function HomePage() {
 
       xhr.addEventListener('error', () => {
         xhrRef.current = null
+        stopProgressAnimation()
+        uploadSamplesRef.current = []
+        setUploadSpeedBps(null)
+        setUploadEtaSec(null)
         reject(new Error(t.networkOrCancelled))
       })
       
       xhr.addEventListener('abort', () => {
         xhrRef.current = null
+        stopProgressAnimation()
+        uploadSamplesRef.current = []
+        setUploadSpeedBps(null)
+        setUploadEtaSec(null)
         reject(new Error(t.uploadCancelled))
       })
 
       xhr.timeout = 30 * 60 * 1000
       xhr.addEventListener('timeout', () => {
         xhrRef.current = null
+        stopProgressAnimation()
+        uploadSamplesRef.current = []
+        setUploadSpeedBps(null)
+        setUploadEtaSec(null)
         reject(new Error(t.uploadTimeout))
       })
 
@@ -268,7 +382,13 @@ export default function HomePage() {
     ))
     
     setCurrentUpload({ filename: currentItem.file.name, size: currentItem.file.size })
-    setProgress(0)
+    stopProgressAnimation()
+    progressTargetRef.current = 0
+    setDisplayedProgress(0)
+    uploadSamplesRef.current = []
+    uploadMetaLastUpdateRef.current = 0
+    setUploadSpeedBps(null)
+    setUploadEtaSec(null)
     
     try {
       const result = await uploadSingleFile(currentItem.file)
@@ -288,7 +408,7 @@ export default function HomePage() {
     
     setIsUploading(false)
     setCurrentUpload(null)
-  }, [isUploading, uploadQueue, uploadPassword])
+  }, [isUploading, uploadQueue, uploadPassword, setDisplayedProgress, startProgressAnimation, stopProgressAnimation])
 
   useEffect(() => {
     if (uploadQueue.some(item => item.status === 'waiting') && !isUploading) {
@@ -339,7 +459,13 @@ export default function HomePage() {
     setIsPasswordVerified(false)
     setUploadPassword('')
     setCurrentUpload(null)
-    setProgress(0)
+    stopProgressAnimation()
+    progressTargetRef.current = 0
+    setDisplayedProgress(0)
+    uploadSamplesRef.current = []
+    uploadMetaLastUpdateRef.current = 0
+    setUploadSpeedBps(null)
+    setUploadEtaSec(null)
   }
 
   return (
@@ -438,7 +564,8 @@ export default function HomePage() {
                             <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
                           </div>
                         </div>
-                        <p className="text-sm text-slate-400 font-medium">{progress}%</p>
+                        <p className="text-sm text-slate-400 font-medium">{Math.round(progress)}%</p>
+                        <p className="text-xs text-slate-400 mt-1">{formatSpeed(uploadSpeedBps)} · 剩余 {formatEta(uploadEtaSec)}</p>
                       </div>
                     )}
 
