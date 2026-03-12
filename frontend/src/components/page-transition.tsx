@@ -12,6 +12,7 @@ const PAGE_TRANSITION_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [currentChildren, setCurrentChildren] = useState(children)
   const [previousChildren, setPreviousChildren] = useState<ReactNode | null>(null)
   const [transitionStage, setTransitionStage] = useState<'idle' | 'from' | 'to'>('idle')
@@ -21,6 +22,14 @@ export function PageTransition({ children }: PageTransitionProps) {
   const currentChildrenRef = useRef(children)
   const rafIdRef = useRef<number | null>(null)
   const timerIdRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      router.prefetch('/chat')
+      router.prefetch('/device')
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [router])
 
   useEffect(() => {
     if (isInitialMount.current) {
