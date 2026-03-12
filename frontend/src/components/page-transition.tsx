@@ -14,12 +14,9 @@ export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [currentChildren, setCurrentChildren] = useState(children)
-  const [previousChildren, setPreviousChildren] = useState<ReactNode | null>(null)
   const [transitionStage, setTransitionStage] = useState<'idle' | 'from' | 'to'>('idle')
-  const [transitionVariant, setTransitionVariant] = useState<'drawer-in' | 'drawer-out' | 'push'>('push')
   const prevPathRef = useRef(pathname)
   const isInitialMount = useRef(true)
-  const currentChildrenRef = useRef(children)
   const rafIdRef = useRef<number | null>(null)
   const timerIdRef = useRef<number | null>(null)
 
@@ -36,25 +33,12 @@ export function PageTransition({ children }: PageTransitionProps) {
       isInitialMount.current = false
       prevPathRef.current = pathname
       setCurrentChildren(children)
-      currentChildrenRef.current = children
       return
     }
 
     if (prevPathRef.current === pathname) {
       setCurrentChildren(children)
-      currentChildrenRef.current = children
       return
-    }
-
-    const prevPath = prevPathRef.current
-    const nextPath = pathname
-    const isPickupChatPair =
-      (prevPath === '/' && nextPath === '/chat') || (prevPath === '/chat' && nextPath === '/')
-
-    if (isPickupChatPair) {
-      setTransitionVariant(prevPath === '/' ? 'drawer-in' : 'drawer-out')
-    } else {
-      setTransitionVariant('push')
     }
 
     if (rafIdRef.current !== null) {
@@ -66,9 +50,7 @@ export function PageTransition({ children }: PageTransitionProps) {
       timerIdRef.current = null
     }
 
-    setPreviousChildren(currentChildrenRef.current)
     setCurrentChildren(children)
-    currentChildrenRef.current = children
     setTransitionStage('from')
 
     rafIdRef.current = requestAnimationFrame(() => {
@@ -77,7 +59,6 @@ export function PageTransition({ children }: PageTransitionProps) {
 
     timerIdRef.current = window.setTimeout(() => {
       setTransitionStage('idle')
-      setPreviousChildren(null)
       rafIdRef.current = null
       timerIdRef.current = null
     }, PAGE_TRANSITION_MS)
@@ -108,84 +89,30 @@ export function PageTransition({ children }: PageTransitionProps) {
     transform: 'translate3d(0, 0, 0)',
   }
 
-  const previousStyle: CSSProperties = (() => {
-    if (!previousChildren) return { display: 'none' }
-
+  const currentStyle: CSSProperties = (() => {
     if (transitionStage === 'from') {
       return {
         ...layerBase,
-        zIndex: transitionVariant === 'drawer-out' ? 20 : 10,
-        transform: 'translate3d(0, 0, 0)',
+        zIndex: 20,
+        transform: 'translate3d(100%, 0, 0)',
         transition: 'none',
-        pointerEvents: 'none',
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.04), -24px 0 60px rgba(0,0,0,0.18)',
       }
     }
 
     if (transitionStage === 'to') {
-      if (transitionVariant === 'drawer-in') {
-        return {
-          ...layerBase,
-          zIndex: 10,
-          transform: 'translate3d(0, 0, 0)',
-          transition: 'none',
-          pointerEvents: 'none',
-        }
-      }
-
       return {
         ...layerBase,
-        zIndex: transitionVariant === 'drawer-out' ? 20 : 10,
-        transform: `translate3d(${transitionVariant === 'drawer-out' ? '100%' : '-100%'}, 0, 0)`,
-        transition,
-        pointerEvents: 'none',
-      }
-    }
-
-    return { display: 'none' }
-  })()
-
-  const currentStyle: CSSProperties = (() => {
-    if (transitionStage === 'from' && previousChildren) {
-      if (transitionVariant === 'drawer-out') {
-        return {
-          ...layerBase,
-          zIndex: 10,
-          transform: 'translate3d(0, 0, 0)',
-          transition: 'none',
-        }
-      }
-
-      return {
-        ...layerBase,
-        zIndex: transitionVariant === 'drawer-in' ? 20 : 10,
-        transform: 'translate3d(100%, 0, 0)',
-        transition: 'none',
-        boxShadow: transitionVariant === 'drawer-in' ? '0 0 0 1px rgba(0,0,0,0.04), -24px 0 60px rgba(0,0,0,0.18)' : undefined,
-      }
-    }
-
-    if (transitionStage === 'to' && previousChildren) {
-      if (transitionVariant === 'drawer-out') {
-        return {
-          ...layerBase,
-          zIndex: 10,
-          transform: 'translate3d(0, 0, 0)',
-          transition: 'none',
-        }
-      }
-
-      return {
-        ...layerBase,
-        zIndex: transitionVariant === 'drawer-in' ? 20 : 10,
+        zIndex: 20,
         transform: 'translate3d(0, 0, 0)',
-        transition: transitionVariant === 'drawer-out' ? 'none' : transition,
-        boxShadow: transitionVariant === 'drawer-in' ? '0 0 0 1px rgba(0,0,0,0.04), -24px 0 60px rgba(0,0,0,0.18)' : undefined,
+        transition,
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.04), -24px 0 60px rgba(0,0,0,0.18)',
       }
     }
 
     return {
       ...layerBase,
-      zIndex: 10,
+      zIndex: 20,
       transform: 'translate3d(0, 0, 0)',
       transition: 'none',
     }
@@ -198,7 +125,6 @@ export function PageTransition({ children }: PageTransitionProps) {
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/50 rounded-full blur-3xl opacity-60 mix-blend-multiply filter" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-slate-200/50 rounded-full blur-3xl opacity-60 mix-blend-multiply filter" />
       </div>
-      {previousChildren && <div style={previousStyle}>{previousChildren}</div>}
       <div style={currentStyle}>{currentChildren}</div>
     </div>
   )
