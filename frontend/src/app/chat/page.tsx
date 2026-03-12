@@ -578,7 +578,7 @@ export default function AIChatPage() {
   )
 
   return (
-    <div className="h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4 overflow-hidden">
+    <div className="h-screen flex items-center justify-center p-4 overflow-hidden">
       <div className={`w-full max-w-[80%] sm:max-w-[90%] h-[90vh] sm:h-[95vh] bg-background rounded-3xl shadow-2xl overflow-hidden flex relative`}>
         <div className={`bg-secondary flex flex-col ${isSidebarOpen ? 'w-64' : 'w-0'} transition-all duration-300 overflow-hidden`}>
           <div className="flex justify-between items-center p-4">

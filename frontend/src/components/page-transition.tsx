@@ -193,6 +193,11 @@ export function PageTransition({ children }: PageTransitionProps) {
 
   return (
     <div className="relative w-full h-full overflow-hidden" style={{ contain: 'layout paint' }}>
+      <div className="absolute inset-0 -z-10 pointer-events-none">
+        <div className="absolute inset-0 bg-[#f8fafc]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/50 rounded-full blur-3xl opacity-60 mix-blend-multiply filter" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-slate-200/50 rounded-full blur-3xl opacity-60 mix-blend-multiply filter" />
+      </div>
       {previousChildren && <div style={previousStyle}>{previousChildren}</div>}
       <div style={currentStyle}>{currentChildren}</div>
     </div>
