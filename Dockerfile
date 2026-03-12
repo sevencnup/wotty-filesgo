@@ -11,5 +11,5 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y libsqlite3-0 ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/filesgo-server /app/filesgo-server
 COPY --from=builder /app/config.yaml ./
-EXPOSE 8080
+EXPOSE 3003
 CMD ["./filesgo-server"]

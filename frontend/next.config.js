@@ -11,7 +11,7 @@ module.exports = (phase) => {
       return [
         {
           source: '/api/:path*',
-          destination: 'http://localhost:8080/api/:path*',
+          destination: 'http://localhost:3003/api/:path*',
         },
       ]
     },

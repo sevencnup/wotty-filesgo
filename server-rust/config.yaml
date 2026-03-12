@@ -4,7 +4,7 @@ upload_password: "filesgo.."
 
 # 服务器配置
 server:
-  port: 8080
+  port: 3003
 
 # 文件保留时间
 retention:

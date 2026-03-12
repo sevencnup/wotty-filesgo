@@ -33,7 +33,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             upload_password: "filesgo123".to_string(),
-            server: ServerConfig { port: 8080 },
+            server: ServerConfig { port: 3003 },
             retention: RetentionConfig {
                 initial_hours: 24,
                 after_download_hours: 2,

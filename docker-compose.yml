@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "3003:3003"
     volumes:
       - ./data/uploads:/app/uploads
       - ./data/filesgo.db:/app/filesgo.db

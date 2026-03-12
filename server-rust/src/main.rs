@@ -79,10 +79,10 @@ async fn main() -> std::io::Result<()> {
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| config.server.port.to_string())
         .parse::<u16>()
-        .unwrap_or(8080);
+        .unwrap_or(3003);
 
     let server_addr = std::env::var("SERVER_ADDR")
-        .unwrap_or_else(|_| "http://103.69.128.25:8080".to_string());
+        .unwrap_or_else(|_| "http://103.69.128.25:3003".to_string());
 
     fs::create_dir_all("uploads").ok();
 
