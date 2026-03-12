@@ -22,7 +22,6 @@ export function PageTransition({ children }: PageTransitionProps) {
 
   useEffect(() => {
     const id = window.setTimeout(() => {
-      router.prefetch('/chat')
       router.prefetch('/device')
     }, 0)
     return () => window.clearTimeout(id)

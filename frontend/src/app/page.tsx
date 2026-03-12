@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 
 const translations = {
   zh: {
@@ -31,7 +30,6 @@ const translations = {
     fileNotFound: '文件不存在或已过期',
     networkError: '网络错误',
     downloadStarted: '下载已开始',
-    aiChatMode: 'AI 聊天模式',
     footer: '© 2026 星七七  FilesGO 文件传输· 2H Auto-Destruct',
     passwordError: '密码错误，请重新输入',
     passwordVerifyFailed: '密码验证失败',
@@ -552,12 +550,6 @@ export default function HomePage() {
           <p className="text-slate-400 text-xs font-medium tracking-widest uppercase mb-3">
             {t.footer}
           </p>
-          <Link href="/chat" className="inline-flex items-center gap-2 text-blue-500 hover:text-blue-600 text-sm font-medium transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            {t.aiChatMode}
-          </Link>
         </footer>
       </div>
     </div>
