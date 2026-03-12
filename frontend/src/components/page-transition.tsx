@@ -84,6 +84,7 @@ export function PageTransition({ children }: PageTransitionProps) {
     inset: 0,
     width: '100%',
     height: '100%',
+    contain: 'paint',
     willChange: 'transform',
     backfaceVisibility: 'hidden',
     transform: 'translate3d(0, 0, 0)',
@@ -96,7 +97,7 @@ export function PageTransition({ children }: PageTransitionProps) {
         zIndex: 20,
         transform: 'translate3d(100%, 0, 0)',
         transition: 'none',
-        boxShadow: '0 0 0 1px rgba(0,0,0,0.04), -24px 0 60px rgba(0,0,0,0.18)',
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.04), -12px 0 28px rgba(0,0,0,0.14)',
       }
     }
 
@@ -106,7 +107,7 @@ export function PageTransition({ children }: PageTransitionProps) {
         zIndex: 20,
         transform: 'translate3d(0, 0, 0)',
         transition,
-        boxShadow: '0 0 0 1px rgba(0,0,0,0.04), -24px 0 60px rgba(0,0,0,0.18)',
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.04), -12px 0 28px rgba(0,0,0,0.14)',
       }
     }
 
@@ -120,11 +121,13 @@ export function PageTransition({ children }: PageTransitionProps) {
 
   return (
     <div className="relative w-full h-full overflow-hidden" style={{ contain: 'layout paint' }}>
-      <div className="absolute inset-0 -z-10 pointer-events-none">
-        <div className="absolute inset-0 bg-[#f8fafc]" />
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/50 rounded-full blur-3xl opacity-60 mix-blend-multiply filter" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-slate-200/50 rounded-full blur-3xl opacity-60 mix-blend-multiply filter" />
-      </div>
+      <div
+        className="absolute inset-0 -z-10 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(600px circle at 10% 10%, rgba(191, 219, 254, 0.55), transparent 60%), radial-gradient(600px circle at 90% 90%, rgba(226, 232, 240, 0.55), transparent 60%), #f8fafc',
+        }}
+      />
       <div style={currentStyle}>{currentChildren}</div>
     </div>
   )
