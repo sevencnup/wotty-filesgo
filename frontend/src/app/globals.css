@@ -108,16 +108,16 @@
   content: "";
   position: absolute;
   left: 50%;
-  top: 140px;
-  transform: translateX(-340px);
-  width: 120px;
-  height: 56px;
+  top: 118px;
+  transform: translateX(-260px);
+  width: 72px;
+  height: 34px;
   pointer-events: none;
-  opacity: 0.34;
+  opacity: 0.1;
   background:
-    linear-gradient(90deg, transparent 0%, #29c8ce 16%, #33d4bc 44%, transparent 72%) 0 4px / 100% 8px no-repeat,
-    linear-gradient(90deg, transparent 0%, #2c9df8 24%, #24c6d0 62%, transparent 88%) 0 24px / 88% 7px no-repeat,
-    linear-gradient(90deg, transparent 0%, #2ad2be 34%, #21b6d4 72%, transparent 100%) 0 40px / 74% 7px no-repeat;
+    linear-gradient(90deg, transparent 0%, #29c8ce 16%, #33d4bc 44%, transparent 72%) 0 4px / 100% 7px no-repeat,
+    linear-gradient(90deg, transparent 0%, #2c9df8 24%, #24c6d0 62%, transparent 88%) 0 19px / 88% 6px no-repeat,
+    linear-gradient(90deg, transparent 0%, #2ad2be 34%, #21b6d4 72%, transparent 100%) 0 33px / 74% 6px no-repeat;
   filter: blur(0.2px);
 }
 
@@ -127,73 +127,62 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(360px 220px at calc(50% + 260px) 280px, rgba(255, 179, 45, 0.1), transparent 65%),
-    radial-gradient(420px 300px at calc(50% - 240px) 220px, rgba(39, 168, 255, 0.14), transparent 64%);
-}
-
-.brand-logo-badge {
-  border-radius: 22px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(241, 246, 255, 0.85));
-  border: 1px solid rgba(255, 255, 255, 0.88);
-  box-shadow:
-    0 14px 32px -18px rgba(23, 63, 138, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.9) inset;
-  padding: 10px;
+    radial-gradient(340px 220px at calc(50% + 220px) 240px, rgba(255, 179, 45, 0.05), transparent 65%),
+    radial-gradient(380px 260px at calc(50% - 220px) 180px, rgba(39, 168, 255, 0.08), transparent 64%);
 }
 
 .theme-brand-dot {
   display: inline-block;
-  width: 12px;
-  height: 12px;
+  width: 9px;
+  height: 9px;
   border-radius: 999px;
   background: var(--sun-gradient);
-  box-shadow: 0 4px 12px rgba(255, 153, 0, 0.45);
+  box-shadow: 0 2px 8px rgba(255, 153, 0, 0.28);
 }
 
 .folder-shell {
   position: relative;
-  margin-top: 8px;
+  margin-top: 2px;
 }
 
-.folder-shell::before {
-  content: "";
-  position: absolute;
-  left: 6%;
-  right: 8%;
-  top: -22px;
-  height: 76px;
-  border-radius: 26px 26px 20px 20px;
-  background: linear-gradient(96deg, rgba(44, 180, 255, 0.9), rgba(23, 118, 236, 0.95));
-  box-shadow:
-    0 16px 35px -20px rgba(16, 95, 212, 0.85),
-    0 2px 0 rgba(255, 255, 255, 0.35) inset;
-  z-index: 0;
+.folder-hero {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 18px;
 }
 
-.folder-shell::after {
-  content: "";
-  position: absolute;
-  left: 12%;
-  top: -30px;
-  width: 210px;
-  height: 32px;
-  border-radius: 16px 16px 0 0;
-  background: linear-gradient(95deg, rgba(255, 255, 255, 0.75), rgba(228, 236, 250, 0.82));
-  z-index: 0;
+.folder-hero-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 10px 24px -20px rgba(25, 76, 158, 0.34);
+  flex-shrink: 0;
+}
+
+.folder-hero-copy {
+  padding-top: 2px;
 }
 
 .theme-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(247, 249, 255, 0.93));
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 255, 0.94));
+  border: 1px solid rgba(255, 255, 255, 0.82);
   box-shadow:
-    0 35px 70px -36px rgba(41, 73, 142, 0.55),
-    0 2px 0 rgba(255, 255, 255, 0.85) inset;
+    0 22px 48px -34px rgba(41, 73, 142, 0.32),
+    0 1px 0 rgba(255, 255, 255, 0.82) inset;
   position: relative;
   z-index: 1;
 }
 
 .theme-tabs {
-  background: linear-gradient(180deg, rgba(232, 239, 252, 0.65), rgba(255, 255, 255, 0.4));
+  background: linear-gradient(180deg, rgba(245, 248, 255, 0.9), rgba(255, 255, 255, 0.55));
 }
 
 .theme-input {
@@ -365,4 +354,21 @@
 
 .animate-fadeIn {
   animation: fadeIn 0.25s ease-out forwards;
+}
+
+@media (max-width: 768px) {
+  .folder-hero {
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .folder-hero-mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+  }
+
+  .folder-hero-copy {
+    padding-top: 0;
+  }
 }

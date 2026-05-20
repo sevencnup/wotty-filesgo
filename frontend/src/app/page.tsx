@@ -482,21 +482,21 @@ export default function HomePage() {
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-6 md:py-12 max-w-[760px] flex-grow flex flex-col justify-center">
-        <header className="mb-8 md:mb-14 flex items-center justify-center gap-x-5 md:gap-x-7">
-          <div className="brand-logo-badge inline-flex items-center justify-center shrink-0">
-            <Image src="/logo.png" alt="Logo" width={120} height={120} className="w-20 h-20 md:w-28 md:h-28 object-contain" />
-          </div>
-          <div className="text-left">
-            <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-0 md:mb-1 tracking-tight">{t.title}</h1>
-            <p className="text-sm md:text-base font-bold tracking-wide text-slate-500 flex items-center gap-2">
-              <span className="theme-accent-text">{t.subtitle}</span>
-              <span className="theme-brand-dot" />
-            </p>
-          </div>
-        </header>
-
+      <div className="container mx-auto px-4 py-6 md:py-12 max-w-[720px] flex-grow flex flex-col justify-center">
         <div className="folder-shell">
+          <div className="folder-hero">
+            <div className="folder-hero-mark">
+              <Image src="/logo.png" alt="Logo" width={120} height={120} className="w-11 h-11 md:w-14 md:h-14 object-contain" />
+            </div>
+            <div className="folder-hero-copy text-left">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-0 tracking-tight">{t.title}</h1>
+              <p className="text-sm md:text-[15px] font-semibold tracking-wide text-slate-500 flex items-center gap-2">
+                <span className="theme-accent-text">{t.subtitle}</span>
+                <span className="theme-brand-dot" />
+              </p>
+            </div>
+          </div>
+
           <div className="glass theme-panel rounded-[32px] border border-white/60 overflow-hidden transition-all duration-300">
             <div className="theme-tabs flex border-b border-slate-100">
               <button
