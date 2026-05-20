@@ -482,93 +482,97 @@ export default function HomePage() {
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-6 md:py-12 max-w-xl flex-grow flex flex-col justify-center">
-        <header className="mb-6 md:mb-12 flex items-center justify-center gap-x-4 md:gap-x-6">
-          <div className="inline-flex items-center justify-center shrink-0">
-            <Image src="/logo.png" alt="Logo" width={96} height={96} className="w-16 h-16 md:w-24 md:h-24 object-contain" />
+      <div className="container mx-auto px-4 py-6 md:py-12 max-w-[760px] flex-grow flex flex-col justify-center">
+        <header className="mb-8 md:mb-14 flex items-center justify-center gap-x-5 md:gap-x-7">
+          <div className="brand-logo-badge inline-flex items-center justify-center shrink-0">
+            <Image src="/logo.png" alt="Logo" width={120} height={120} className="w-20 h-20 md:w-28 md:h-28 object-contain" />
           </div>
           <div className="text-left">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-0 md:mb-1 tracking-tight">{t.title}</h1>
-            <p className="theme-accent-text text-sm md:text-base font-bold tracking-wide">{t.subtitle}</p>
+            <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-0 md:mb-1 tracking-tight">{t.title}</h1>
+            <p className="text-sm md:text-base font-bold tracking-wide text-slate-500 flex items-center gap-2">
+              <span className="theme-accent-text">{t.subtitle}</span>
+              <span className="theme-brand-dot" />
+            </p>
           </div>
         </header>
 
-        <div className="glass theme-panel rounded-3xl border border-white/60 overflow-hidden transition-all duration-300">
-          <div className="flex border-b border-slate-100">
-            <button
-              onClick={() => setCurrentTab('send')}
-              className={`flex-1 py-4 md:py-5 text-center text-sm tracking-wide transition-all ${currentTab === 'send' ? 'tab-active' : 'tab-inactive'}`}
-            >
-              {t.sendTab}
-            </button>
-            <button
-              onClick={() => setCurrentTab('receive')}
-              className={`flex-1 py-4 md:py-5 text-center text-sm tracking-wide transition-all ${currentTab === 'receive' ? 'tab-active' : 'tab-inactive'}`}
-            >
-              {t.receiveTab}
-            </button>
-          </div>
+        <div className="folder-shell">
+          <div className="glass theme-panel rounded-[32px] border border-white/60 overflow-hidden transition-all duration-300">
+            <div className="theme-tabs flex border-b border-slate-100">
+              <button
+                onClick={() => setCurrentTab('send')}
+                className={`flex-1 py-4 md:py-5 text-center text-base tracking-wide transition-all ${currentTab === 'send' ? 'tab-active' : 'tab-inactive'}`}
+              >
+                {t.sendTab}
+              </button>
+              <button
+                onClick={() => setCurrentTab('receive')}
+                className={`flex-1 py-4 md:py-5 text-center text-base tracking-wide transition-all ${currentTab === 'receive' ? 'tab-active' : 'tab-inactive'}`}
+              >
+                {t.receiveTab}
+              </button>
+            </div>
 
-          <div className="p-6 md:p-10 min-h-[380px] md:min-h-[460px] flex flex-col justify-center">
-            {currentTab === 'send' ? (
-              <div className="space-y-6">
-                {!isPasswordVerified ? (
-                  <div>
-                    <div className="relative">
-                      <input
-                        type="password"
-                        value={uploadPassword}
-                        onChange={(e) => setUploadPassword(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && !isVerifying && verifyPassword()}
-                        onBlur={() => uploadPassword.trim() && !isVerifying && verifyPassword()}
-                        disabled={isVerifying}
-                        placeholder={t.passwordPlaceholder}
-                        className="theme-input block w-full px-4 py-4 text-base text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 bg-slate-50 transition-all outline-none disabled:opacity-50 disabled:cursor-wait"
-                      />
-                      {isVerifying && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
+            <div className="p-6 md:p-10 min-h-[420px] md:min-h-[500px] flex flex-col justify-center">
+              {currentTab === 'send' ? (
+                <div className="space-y-6">
+                  {!isPasswordVerified ? (
+                    <div>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          value={uploadPassword}
+                          onChange={(e) => setUploadPassword(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && !isVerifying && verifyPassword()}
+                          onBlur={() => uploadPassword.trim() && !isVerifying && verifyPassword()}
+                          disabled={isVerifying}
+                          placeholder={t.passwordPlaceholder}
+                          className="theme-input block w-full px-4 py-4 text-base text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 bg-slate-50 transition-all outline-none disabled:opacity-50 disabled:cursor-wait"
+                        />
+                        {isVerifying && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 mt-2 ml-1">{t.passwordHint}</p>
+                    </div>
+                  ) : (
+                    <div className="animate-fadeIn">
+                      {uploadQueue.length > 0 && (
+                        <div className="space-y-3">
+                          {uploadQueue.map((item, index) => (
+                            <div key={item.id} className="theme-chip flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                                  <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-700 truncate">{item.file.name}</p>
+                                  <p className="text-xs text-slate-400">{formatSize(item.file.size)}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {item.status === 'uploading' ? (
+                                  <span className="text-xs text-blue-600 font-medium animate-pulse">{t.uploading}</span>
+                                ) : (
+                                  <span className="text-xs text-slate-400">{t.waiting}</span>
+                                )}
+                                <button onClick={() => removeFromQueue(index)} className="p-1 hover:bg-red-100 rounded-lg transition-colors">
+                                  <svg className="w-4 h-4 text-slate-400 hover:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-2 ml-1">{t.passwordHint}</p>
-                  </div>
-                ) : (
-                  <div className="animate-fadeIn">
-                    {uploadQueue.length > 0 && (
-                      <div className="space-y-3">
-                        {uploadQueue.map((item, index) => (
-                          <div key={item.id} className="theme-chip flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-                                <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-slate-700 truncate">{item.file.name}</p>
-                                <p className="text-xs text-slate-400">{formatSize(item.file.size)}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {item.status === 'uploading' ? (
-                                <span className="text-xs text-blue-600 font-medium animate-pulse">{t.uploading}</span>
-                              ) : (
-                                <span className="text-xs text-slate-400">{t.waiting}</span>
-                              )}
-                              <button onClick={() => removeFromQueue(index)} className="p-1 hover:bg-red-100 rounded-lg transition-colors">
-                                <svg className="w-4 h-4 text-slate-400 hover:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
 
                     {currentUpload && (
                       <div className="text-center py-4">
@@ -653,37 +657,38 @@ export default function HomePage() {
                         </label>
                       </div>
                     )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-3 ml-1">{t.enterCode}</label>
+                    <input
+                      type="text"
+                      value={receiveCode}
+                      onChange={(e) => setReceiveCode(e.target.value.toUpperCase())}
+                      maxLength={6}
+                      placeholder="A1B2C3"
+                      className="theme-input block w-full px-4 py-5 text-2xl font-mono text-center text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 uppercase tracking-[0.2em] bg-slate-50 transition-all outline-none"
+                    />
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-3 ml-1">{t.enterCode}</label>
-                  <input
-                    type="text"
-                    value={receiveCode}
-                    onChange={(e) => setReceiveCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                    placeholder="A1B2C3"
-                    className="theme-input block w-full px-4 py-5 text-2xl font-mono text-center text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 uppercase tracking-[0.2em] bg-slate-50 transition-all outline-none"
-                  />
+                  <button
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="theme-primary-btn w-full bg-blue-600 text-white py-4 rounded-xl text-base font-semibold hover:bg-blue-700 active:transform active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                  >
+                    {isDownloading ? t.finding : t.downloadBtn}
+                  </button>
+                  <div className={`text-center text-xs min-h-[20px] font-medium ${
+                    receiveStatus.type === 'error' ? 'text-red-500' :
+                    receiveStatus.type === 'success' ? 'text-green-600' : 'text-slate-400'
+                  }`}>
+                    {receiveStatus.text}
+                  </div>
                 </div>
-                <button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="theme-primary-btn w-full bg-blue-600 text-white py-4 rounded-xl text-base font-semibold hover:bg-blue-700 active:transform active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                >
-                  {isDownloading ? t.finding : t.downloadBtn}
-                </button>
-                <div className={`text-center text-xs min-h-[20px] font-medium ${
-                  receiveStatus.type === 'error' ? 'text-red-500' :
-                  receiveStatus.type === 'success' ? 'text-green-600' : 'text-slate-400'
-                }`}>
-                  {receiveStatus.text}
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         
