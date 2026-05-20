@@ -219,6 +219,17 @@
   filter: brightness(1.05) saturate(1.06);
 }
 
+.theme-download-btn {
+  background: linear-gradient(128deg, #1e79ed 0%, #249cf0 48%, #2ad3be 100%) !important;
+  box-shadow:
+    0 14px 28px -14px rgba(24, 116, 236, 0.92),
+    0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+.theme-download-btn:hover {
+  filter: brightness(1.04) saturate(1.08);
+}
+
 .theme-secondary-btn {
   background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
   border: 1px solid #d0dcf1;

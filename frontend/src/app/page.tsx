@@ -673,13 +673,13 @@ export default function HomePage() {
                       className="theme-input block w-full px-4 py-5 text-2xl font-mono text-center text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 uppercase tracking-[0.2em] bg-slate-50 transition-all outline-none"
                     />
                   </div>
-                  <button
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                    className="theme-primary-btn w-full bg-blue-600 text-white py-4 rounded-xl text-base font-semibold hover:bg-blue-700 active:transform active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                  >
-                    {isDownloading ? t.finding : t.downloadBtn}
-                  </button>
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="theme-download-btn w-full bg-blue-600 text-white py-4 rounded-xl text-base font-semibold hover:bg-blue-700 active:transform active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                >
+                  {isDownloading ? t.finding : t.downloadBtn}
+                </button>
                   <div className={`text-center text-xs min-h-[20px] font-medium ${
                     receiveStatus.type === 'error' ? 'text-red-500' :
                     receiveStatus.type === 'success' ? 'text-green-600' : 'text-slate-400'
