@@ -12,7 +12,7 @@ const translations = {
     passwordPlaceholder: '请输入上传密码',
     passwordHint: '需要密码才能上传文件',
     dropzoneText: '点击或拖拽文件',
-    dropzoneHint: '支持任意格式 · 最大 10GB',
+    dropzoneHint: '支持任意格式 · 最大 1GB',
     uploading: '正在上传...',
     waiting: '等待',
     uploadComplete: '上传完成',
@@ -43,7 +43,7 @@ const translations = {
     uploadTimeout: '上传超时',
     networkOrCancelled: '网络错误或上传被取消',
     confirmCancel: '确定要取消上传',
-    fileTooLarge: '超过 10GB 限制，已跳过',
+    fileTooLarge: '超过 1GB 限制，已跳过',
   }
 }
 
@@ -51,6 +51,7 @@ export default function HomePage() {
   const [currentTab, setCurrentTab] = useState<'send' | 'receive'>('send')
   const [uploadPassword, setUploadPassword] = useState('')
   const [isPasswordVerified, setIsPasswordVerified] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
   const [uploadQueue, setUploadQueue] = useState<any[]>([])
   const [uploadResults, setUploadResults] = useState<any[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -175,6 +176,7 @@ export default function HomePage() {
 
   const verifyPassword = async () => {
     if (!uploadPassword.trim()) return
+    setIsVerifying(true)
     try {
       const res = await fetch('/api/verify-password', {
         method: 'POST',
@@ -182,7 +184,7 @@ export default function HomePage() {
         body: JSON.stringify({ password: uploadPassword.trim() })
       })
       const data = await res.json()
-      
+
       if (data.valid) {
         setIsPasswordVerified(true)
       } else {
@@ -192,11 +194,12 @@ export default function HomePage() {
     } catch (e) {
       showToast(t.passwordVerifyFailed, 'error')
     }
+    setIsVerifying(false)
   }
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return
-    const MAX_SIZE = 10 * 1024 * 1024 * 1024
+    const MAX_SIZE = 1 * 1024 * 1024 * 1024
     const newFiles: any[] = []
     
     for (let i = 0; i < files.length; i++) {
@@ -469,7 +472,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="h-screen text-slate-800 font-sans flex flex-col relative overflow-hidden">
+    <div className="filesgo-theme h-screen text-slate-800 font-sans flex flex-col relative overflow-hidden">
 
       {toast && (
         <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-50 ${
@@ -486,11 +489,11 @@ export default function HomePage() {
           </div>
           <div className="text-left">
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-0 md:mb-1 tracking-tight">{t.title}</h1>
-            <p className="text-slate-500 text-sm md:text-base font-medium">{t.subtitle}</p>
+            <p className="theme-accent-text text-sm md:text-base font-bold tracking-wide">{t.subtitle}</p>
           </div>
         </header>
 
-        <div className="glass rounded-3xl border border-white/60 overflow-hidden transition-all duration-300">
+        <div className="glass theme-panel rounded-3xl border border-white/60 overflow-hidden transition-all duration-300">
           <div className="flex border-b border-slate-100">
             <button
               onClick={() => setCurrentTab('send')}
@@ -511,25 +514,36 @@ export default function HomePage() {
               <div className="space-y-6">
                 {!isPasswordVerified ? (
                   <div>
-                    <input
-                      type="password"
-                      value={uploadPassword}
-                      onChange={(e) => setUploadPassword(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && verifyPassword()}
-                      onBlur={() => uploadPassword.trim() && verifyPassword()}
-                      placeholder={t.passwordPlaceholder}
-                      className="block w-full px-4 py-4 text-base text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 bg-slate-50 transition-all outline-none"
-                    />
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={uploadPassword}
+                        onChange={(e) => setUploadPassword(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && !isVerifying && verifyPassword()}
+                        onBlur={() => uploadPassword.trim() && !isVerifying && verifyPassword()}
+                        disabled={isVerifying}
+                        placeholder={t.passwordPlaceholder}
+                        className="theme-input block w-full px-4 py-4 text-base text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 bg-slate-50 transition-all outline-none disabled:opacity-50 disabled:cursor-wait"
+                      />
+                      {isVerifying && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-400 mt-2 ml-1">{t.passwordHint}</p>
                   </div>
                 ) : (
-                  <>
+                  <div className="animate-fadeIn">
                     {uploadQueue.length > 0 && (
                       <div className="space-y-3">
                         {uploadQueue.map((item, index) => (
-                          <div key={item.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                          <div key={item.id} className="theme-chip flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
+                              <div className="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
                                 <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -560,10 +574,10 @@ export default function HomePage() {
                       <div className="text-center py-4">
                         <p className="text-slate-600 font-medium mb-3">{t.uploading}: {currentUpload.filename}</p>
                         <div className="w-full max-w-xs mx-auto mb-2">
-                          <div className="h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
+                            <div className="h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                              <div className="theme-upload-bar h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out" style={{ width: `${progress}%` }}></div>
+                            </div>
                           </div>
-                        </div>
                         <p className="text-sm text-slate-400 font-medium">{Math.round(progress)}%</p>
                         <p className="text-xs text-slate-400 mt-1">{formatSpeed(uploadSpeedBps)} · 剩余 {formatEta(uploadEtaSec)}</p>
                       </div>
@@ -572,14 +586,14 @@ export default function HomePage() {
                     {uploadResults.length > 0 && (
                       <div className="space-y-4">
                         {uploadResults.map((result, index) => (
-                          <div key={index} className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-5">
+                          <div key={index} className="theme-chip bg-blue-50 border-2 border-blue-100 rounded-2xl p-5">
                             <div className="flex items-start justify-between mb-3">
                               <p className="text-slate-700 text-sm font-medium truncate pr-2">{result.filename}</p>
                               <span className="text-xs text-slate-400 whitespace-nowrap bg-blue-100/50 px-2 py-0.5 rounded">{t.pickupCode}</span>
                             </div>
                             <div 
                               onClick={() => copyToClipboard(result.code, t.codeCopied)}
-                              className="text-3xl font-mono font-bold tracking-[0.15em] text-blue-600 cursor-pointer hover:bg-blue-200/50 rounded-xl p-3 transition-all text-center mb-3 select-all"
+                              className="theme-code text-3xl font-mono font-bold tracking-[0.15em] text-blue-600 cursor-pointer hover:bg-blue-200/50 rounded-xl p-3 transition-all text-center mb-3 select-all"
                             >
                               {result.code}
                             </div>
@@ -589,7 +603,7 @@ export default function HomePage() {
                               <p className="text-xs text-slate-400 mb-2 text-left">{t.shareLink}</p>
                               <div className="flex items-center gap-2 bg-white/80 rounded-xl p-2.5 border border-blue-200/50 shadow-sm">
                                 <input type="text" readOnly className="flex-1 text-xs text-slate-600 bg-transparent outline-none font-mono truncate" value={result.download_url} />
-                                <button onClick={() => copyToClipboard(result.download_url, t.linkCopied)} className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
+                                <button onClick={() => copyToClipboard(result.download_url, t.linkCopied)} className="theme-secondary-btn text-xs font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
                                   {t.copyLink}
                                 </button>
                               </div>
@@ -597,7 +611,7 @@ export default function HomePage() {
                           </div>
                         ))}
                         
-                        <div className="bg-slate-50/80 border border-slate-200/50 rounded-xl p-4 flex items-center justify-center gap-4">
+                        <div className="theme-chip bg-slate-50/80 border border-slate-200/50 rounded-xl p-4 flex items-center justify-center gap-4">
                           <button onClick={resetUpload} className="text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors flex items-center gap-1.5">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -625,10 +639,10 @@ export default function HomePage() {
                             e.stopPropagation()
                             handleFileSelect(e.dataTransfer.files)
                           }}
-                          className="flex flex-col items-center justify-center w-full h-48 md:h-56 border-2 border-slate-200 border-dashed rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group relative overflow-hidden"
+                          className="theme-dropzone flex flex-col items-center justify-center w-full h-48 md:h-56 border-2 border-slate-200 border-dashed rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group relative overflow-hidden"
                         >
                           <div className="flex flex-col items-center justify-center pt-5 pb-6 z-10">
-                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                            <div className="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-sm">
                               <svg className="w-8 h-8 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                               </svg>
@@ -639,7 +653,7 @@ export default function HomePage() {
                         </label>
                       </div>
                     )}
-                  </>
+                  </div>
                 )}
               </div>
             ) : (
@@ -652,13 +666,13 @@ export default function HomePage() {
                     onChange={(e) => setReceiveCode(e.target.value.toUpperCase())}
                     maxLength={6}
                     placeholder="A1B2C3"
-                    className="block w-full px-4 py-5 text-2xl font-mono text-center text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 uppercase tracking-[0.2em] bg-slate-50 transition-all outline-none"
+                    className="theme-input block w-full px-4 py-5 text-2xl font-mono text-center text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 uppercase tracking-[0.2em] bg-slate-50 transition-all outline-none"
                   />
                 </div>
                 <button
                   onClick={handleDownload}
                   disabled={isDownloading}
-                  className="w-full bg-blue-600 text-white py-4 rounded-xl text-base font-semibold hover:bg-blue-700 active:transform active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                  className="theme-primary-btn w-full bg-blue-600 text-white py-4 rounded-xl text-base font-semibold hover:bg-blue-700 active:transform active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                 >
                   {isDownloading ? t.finding : t.downloadBtn}
                 </button>

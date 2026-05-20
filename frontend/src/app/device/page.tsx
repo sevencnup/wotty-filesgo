@@ -154,7 +154,7 @@ export default function DeviceChatPage() {
       console.log('WebSocket disconnected')
       setTimeout(() => {
         if (currentDevice) connectWebSocket(currentDevice)
-      }, 3000)
+      }, 3656)
     }
 
     ws.onerror = (error) => {
@@ -249,10 +249,10 @@ export default function DeviceChatPage() {
     try {
       const res = await fetch('/api/pairing/request', {
         method: 'POST',
-        headers: {
+        headers: new Headers({
           'Content-Type': 'application/json',
           'X-Device-ID': currentDevice.id
-        },
+        }),
         body: JSON.stringify({ target_key: inputPairingKey.trim() })
       })
       const data = await res.json()
@@ -272,10 +272,10 @@ export default function DeviceChatPage() {
     try {
       await fetch('/api/pairing/accept', {
         method: 'POST',
-        headers: {
+        headers: new Headers({
           'Content-Type': 'application/json',
-          'X-Device-ID': currentDevice?.id
-        },
+          'X-Device-ID': currentDevice?.id || ''
+        }),
         body: JSON.stringify({ pairing_id: pairingId })
       })
       setPairingRequests(prev => prev.filter(r => r.id !== pairingId))
@@ -289,10 +289,10 @@ export default function DeviceChatPage() {
     try {
       await fetch('/api/pairing/reject', {
         method: 'POST',
-        headers: {
+        headers: new Headers({
           'Content-Type': 'application/json',
-          'X-Device-ID': currentDevice?.id
-        },
+          'X-Device-ID': currentDevice?.id || ''
+        }),
         body: JSON.stringify({ pairing_id: pairingId })
       })
       setPairingRequests(prev => prev.filter(r => r.id !== pairingId))
@@ -393,10 +393,10 @@ export default function DeviceChatPage() {
   const messages = deviceMessages[selectedDeviceId || ''] || []
 
   return (
-    <div className={`h-screen overflow-hidden ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`filesgo-theme h-screen overflow-hidden ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       <div className="flex h-screen">
-        <div className="w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="w-72 bg-white/90 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+          <div className="theme-panel p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t.deviceChat}</h1>
               <div className="flex items-center gap-2">
@@ -405,12 +405,12 @@ export default function DeviceChatPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Link href="/" className="flex-1 text-center py-2 px-3 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-gray-700 dark:text-gray-200">
+              <Link href="/" className="theme-secondary-btn flex-1 text-center py-2 px-3 text-sm rounded-lg transition-colors text-gray-700 dark:text-gray-200">
                 {t.backToPickup}
               </Link>
               <button
                 onClick={() => setIsPairingDialogOpen(true)}
-                className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="theme-primary-btn flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 + {t.pairingKey}
               </button>
@@ -428,7 +428,7 @@ export default function DeviceChatPage() {
                   onClick={() => setSelectedDeviceId(device.device_id)}
                   className={`w-full text-left p-3 rounded-lg mb-1 transition-colors ${
                     selectedDeviceId === device.device_id
-                      ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800'
+                      ? 'theme-chip bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -447,7 +447,7 @@ export default function DeviceChatPage() {
           </div>
 
           {currentDevice && (
-            <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            <div className="theme-chip p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <p className="text-xs text-gray-500 dark:text-gray-400">{t.myDevice}</p>
               <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{currentDevice.name}</p>
               <p className="text-xs text-gray-400 font-mono truncate">{currentDevice.id}</p>
@@ -455,10 +455,10 @@ export default function DeviceChatPage() {
           )}
         </div>
 
-        <div className="flex-1 flex flex-col bg-gray-100 dark:bg-gray-900">
+        <div className="flex-1 flex flex-col bg-transparent dark:bg-gray-900">
           {selectedDeviceId ? (
             <>
-              <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+              <div className="theme-panel p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3">
                   <div className={`w-3 h-3 rounded-full ${selectedDevice?.is_online ? 'bg-green-500' : 'bg-gray-400'}`}></div>
                   <div>
@@ -481,8 +481,8 @@ export default function DeviceChatPage() {
                     >
                       <div className={`max-w-[70%] rounded-2xl p-3 ${
                         msg.fromDevice
-                          ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-                          : 'bg-blue-600 text-white'
+                          ? 'theme-chip bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
+                          : 'theme-primary-btn bg-blue-600 text-white'
                       }`}>
                         {msg.type === 'file' || msg.type === 'image' ? (
                           <div className="space-y-2">
@@ -498,8 +498,8 @@ export default function DeviceChatPage() {
                                 onClick={() => window.open(`/api/download/${msg.fileCode}`, '_blank')}
                                 className={`text-sm px-3 py-1 rounded-lg ${
                                   msg.fromDevice
-                                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                                    : 'bg-blue-500 text-white'
+                                    ? 'theme-secondary-btn bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                                    : 'theme-primary-btn bg-blue-500 text-white'
                                 }`}
                               >
                                 {t.download}
@@ -528,7 +528,7 @@ export default function DeviceChatPage() {
                 </div>
               </div>
 
-              <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+              <div className="theme-panel p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
                 <div className="max-w-3xl mx-auto flex gap-2">
                   <input
                     type="file"
@@ -542,7 +542,7 @@ export default function DeviceChatPage() {
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-3 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+                    className="theme-secondary-btn p-3 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
                   >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -554,11 +554,11 @@ export default function DeviceChatPage() {
                     onChange={(e) => setDeviceInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendDeviceMessage()}
                     placeholder={t.sendMessageToDevice}
-                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                    className="theme-input flex-1 px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
                   />
                   <button
                     onClick={sendDeviceMessage}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
+                    className="theme-primary-btn px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
                   >
                     {t.send}
                   </button>
@@ -580,7 +580,7 @@ export default function DeviceChatPage() {
 
       {isPairingDialogOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="theme-panel bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.pairingKey}</h2>
               <button
@@ -596,7 +596,7 @@ export default function DeviceChatPage() {
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t.myDevice}</p>
-                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="theme-chip p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-xs font-mono text-gray-600 dark:text-gray-300">{currentDevice?.id}</p>
                   <p className="text-xs text-gray-400 mt-1">{currentDevice?.name}</p>
                 </div>
@@ -605,7 +605,7 @@ export default function DeviceChatPage() {
               {pairingKey && (
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t.generatePairingKey}</p>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-center">
+                  <div className="theme-chip p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-center">
                     <p className="text-2xl font-mono font-bold tracking-wider text-blue-600 dark:text-blue-400">{pairingKey}</p>
                   </div>
                   <button
@@ -613,7 +613,7 @@ export default function DeviceChatPage() {
                       navigator.clipboard.writeText(pairingKey)
                       alert(t.copy + '!')
                     }}
-                    className="w-full mt-2 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-200"
+                    className="theme-secondary-btn w-full mt-2 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-200"
                   >
                     {t.copy}
                   </button>
@@ -622,7 +622,7 @@ export default function DeviceChatPage() {
 
               <button
                 onClick={generatePairingKeyHandler}
-                className="w-full py-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-200 font-medium"
+                className="theme-secondary-btn w-full py-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-200 font-medium"
               >
                 {t.generatePairingKey}
               </button>
@@ -635,12 +635,12 @@ export default function DeviceChatPage() {
                     value={inputPairingKey}
                     onChange={(e) => setInputPairingKey(e.target.value.toUpperCase())}
                     placeholder={t.inputPairingKey}
-                    className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono tracking-widest"
+                    className="theme-input flex-1 px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono tracking-widest"
                     maxLength={16}
                   />
                   <button
                     onClick={requestPairing}
-                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                    className="theme-warm px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                   >
                     {t.confirm}
                   </button>
@@ -651,7 +651,7 @@ export default function DeviceChatPage() {
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{t.pairingRequest}</p>
                   {pairingRequests.map(req => (
-                    <div key={req.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-2">
+                    <div key={req.id} className="theme-chip flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-2">
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">{req.device_name}</p>
                         <p className="text-xs text-gray-400">{req.from_device}</p>

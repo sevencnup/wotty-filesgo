@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Manrope } from 'next/font/google'
 import './globals.css'
 import { PageTransition } from '@/components/page-transition'
 
-const inter = Inter({ subsets: ['latin'] })
+const manrope = Manrope({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'FilesGO - 简单的文件传输',
@@ -20,7 +20,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/logo.png" />
       </head>
-      <body className={`${inter.className} h-screen overflow-hidden`}>
+      <body className={`${manrope.className} h-screen overflow-hidden`}>
         <PageTransition>
           {children}
         </PageTransition>
