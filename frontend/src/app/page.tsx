@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
+import { uploadFileResumable, UploadCancelledError } from '@/lib/resumable-upload'
 
 const translations = {
   zh: {
@@ -12,7 +13,7 @@ const translations = {
     passwordPlaceholder: '请输入上传密码',
     passwordHint: '需要密码才能上传文件',
     dropzoneText: '点击或拖拽文件',
-    dropzoneHint: '支持任意格式 · 最大 10GB',
+    dropzoneHint: '最大 10GB · 分片加速 · 断点续传',
     uploading: '正在上传...',
     waiting: '等待',
     uploadComplete: '上传完成',
@@ -36,8 +37,6 @@ const translations = {
     copied: '已复制',
     codeCopied: '取件码已复制',
     linkCopied: '链接已复制',
-    encrypting: '正在加密',
-    encryptFailed: '加密失败，是否以明文继续上传？',
     uploadFailed: '上传失败',
     uploadCancelled: '上传已取消',
     uploadTimeout: '上传超时',
@@ -65,12 +64,10 @@ export default function HomePage() {
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const xhrRef = useRef<XMLHttpRequest | null>(null)
+  const uploadControllerRef = useRef<AbortController | null>(null)
   const progressTargetRef = useRef(0)
   const progressRafRef = useRef<number | null>(null)
   const progressDisplayRef = useRef(0)
-  const uploadSamplesRef = useRef<{ t: number; loaded: number; total: number }[]>([])
-  const uploadMetaLastUpdateRef = useRef(0)
   const t = translations.zh
 
   useEffect(() => {
@@ -226,10 +223,7 @@ export default function HomePage() {
 
     if (item.status === 'uploading') {
       if (confirm(`${t.confirmCancel} "${item.file.name}"?`)) {
-        if (xhrRef.current) {
-          xhrRef.current.abort()
-          xhrRef.current = null
-        }
+        uploadControllerRef.current?.abort()
       }
       return
     }
@@ -237,138 +231,24 @@ export default function HomePage() {
     setUploadQueue(prev => prev.filter((_, i) => i !== index))
   }
 
-  const encryptBuffer = async (buffer: ArrayBuffer, password: string) => {
-    const salt = crypto.getRandomValues(new Uint8Array(16))
-    const iv = crypto.getRandomValues(new Uint8Array(12))
-    const enc = new TextEncoder()
-    
-    const keyMaterial = await crypto.subtle.importKey(
-      "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
-    )
-    
-    const key = await crypto.subtle.deriveKey(
-      { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
-      keyMaterial,
-      { name: "AES-GCM", length: 256 },
-      false,
-      ["encrypt"]
-    )
-    
-    const encryptedContent = await crypto.subtle.encrypt(
-      { name: "AES-GCM", iv: iv },
-      key,
-      buffer
-    )
-    
-    const result = new Uint8Array(16 + 12 + encryptedContent.byteLength)
-    result.set(salt, 0)
-    result.set(iv, 16)
-    result.set(new Uint8Array(encryptedContent), 28)
-    
-    return result
-  }
-
-  const uploadSingleFile = async (file: File): Promise<{ code: string }> => {
-    let fileToSend: File | Blob = file
-    
-    if (uploadPassword) {
-      try {
-        const buffer = await file.arrayBuffer()
-        const encryptedData = await encryptBuffer(buffer, uploadPassword)
-        fileToSend = new Blob([encryptedData], { type: 'application/octet-stream' })
-      } catch (e) {
-        if (!confirm(t.encryptFailed)) {
-          throw new Error('User cancelled')
-        }
-      }
-    }
-
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest()
-      xhrRef.current = xhr
-      
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percent = Math.min(100, Math.max(0, (e.loaded / e.total) * 100))
+  const uploadSingleFile = async (file: File) => {
+    const controller = new AbortController()
+    uploadControllerRef.current = controller
+    try {
+      return await uploadFileResumable({
+        file,
+        password: uploadPassword,
+        signal: controller.signal,
+        onProgress: ({ percent, bytesPerSecond, etaSeconds }) => {
           progressTargetRef.current = percent
           startProgressAnimation()
-
-          const now = performance.now()
-          uploadSamplesRef.current.push({ t: now, loaded: e.loaded, total: e.total })
-          const cutoff = now - 1500
-          uploadSamplesRef.current = uploadSamplesRef.current.filter(s => s.t >= cutoff)
-
-          if (now - uploadMetaLastUpdateRef.current >= 250) {
-            const samples = uploadSamplesRef.current
-            if (samples.length >= 2) {
-              const first = samples[0]
-              const last = samples[samples.length - 1]
-              const dt = (last.t - first.t) / 1000
-              if (dt > 0) {
-                const bps = (last.loaded - first.loaded) / dt
-                setUploadSpeedBps(bps > 0 ? bps : null)
-                setUploadEtaSec(bps > 0 ? (last.total - last.loaded) / bps : null)
-              }
-            }
-            uploadMetaLastUpdateRef.current = now
-          }
-        }
+          setUploadSpeedBps(bytesPerSecond)
+          setUploadEtaSec(etaSeconds)
+        },
       })
-
-      xhr.addEventListener('load', () => {
-        xhrRef.current = null
-        progressTargetRef.current = 100
-        startProgressAnimation()
-        uploadSamplesRef.current = []
-        setUploadSpeedBps(null)
-        setUploadEtaSec(0)
-        try {
-          const data = JSON.parse(xhr.responseText)
-          if (xhr.status === 200 && data.code) {
-            resolve({ code: data.code })
-          } else {
-            reject(new Error(data.error || t.uploadFailed))
-          }
-        } catch {
-          reject(new Error(t.uploadFailed))
-        }
-      })
-
-      xhr.addEventListener('error', () => {
-        xhrRef.current = null
-        stopProgressAnimation()
-        uploadSamplesRef.current = []
-        setUploadSpeedBps(null)
-        setUploadEtaSec(null)
-        reject(new Error(t.networkOrCancelled))
-      })
-      
-      xhr.addEventListener('abort', () => {
-        xhrRef.current = null
-        stopProgressAnimation()
-        uploadSamplesRef.current = []
-        setUploadSpeedBps(null)
-        setUploadEtaSec(null)
-        reject(new Error(t.uploadCancelled))
-      })
-
-      xhr.timeout = 30 * 60 * 1000
-      xhr.addEventListener('timeout', () => {
-        xhrRef.current = null
-        stopProgressAnimation()
-        uploadSamplesRef.current = []
-        setUploadSpeedBps(null)
-        setUploadEtaSec(null)
-        reject(new Error(t.uploadTimeout))
-      })
-
-      const formData = new FormData()
-      formData.append('file', fileToSend, file.name)
-      
-      xhr.open('POST', '/api/upload', true)
-      xhr.setRequestHeader('X-Upload-Password', uploadPassword)
-      xhr.send(formData)
-    })
+    } finally {
+      if (uploadControllerRef.current === controller) uploadControllerRef.current = null
+    }
   }
 
   const processQueue = useCallback(async () => {
@@ -388,8 +268,6 @@ export default function HomePage() {
     stopProgressAnimation()
     progressTargetRef.current = 0
     setDisplayedProgress(0)
-    uploadSamplesRef.current = []
-    uploadMetaLastUpdateRef.current = 0
     setUploadSpeedBps(null)
     setUploadEtaSec(null)
     
@@ -400,12 +278,13 @@ export default function HomePage() {
         filename: currentItem.file.name,
         code: result.code,
         size: currentItem.file.size,
-        download_url: window.location.origin + '/' + result.code
+        download_url: result.download_url || window.location.origin + '/?code=' + result.code
       }])
       
       setUploadQueue(prev => prev.filter((_, i) => i !== waitingIndex))
     } catch (e: any) {
-      showToast(`${currentItem.file.name} ${e.message}`, 'error')
+      const message = e instanceof UploadCancelledError ? t.uploadCancelled : (e.message || t.uploadFailed)
+      showToast(`${currentItem.file.name} ${message}`, 'error')
       setUploadQueue(prev => prev.filter((_, i) => i !== waitingIndex))
     }
     
@@ -457,6 +336,7 @@ export default function HomePage() {
   }
 
   const resetUpload = () => {
+    uploadControllerRef.current?.abort()
     setUploadQueue([])
     setUploadResults([])
     setIsPasswordVerified(false)
@@ -465,8 +345,6 @@ export default function HomePage() {
     stopProgressAnimation()
     progressTargetRef.current = 0
     setDisplayedProgress(0)
-    uploadSamplesRef.current = []
-    uploadMetaLastUpdateRef.current = 0
     setUploadSpeedBps(null)
     setUploadEtaSec(null)
   }

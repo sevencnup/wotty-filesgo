@@ -1,4 +1,6 @@
 use actix_multipart::Multipart;
+use actix_files::NamedFile;
+use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use actix_web_actors::ws;
 use crate::config::AppConfig;
@@ -36,7 +38,7 @@ fn now_timestamp() -> i64 {
         .as_secs() as i64
 }
 
-fn get_client_ip(req: &HttpRequest) -> String {
+pub(crate) fn get_client_ip(req: &HttpRequest) -> String {
     if let Some(forwarded) = req.headers().get("X-Forwarded-For") {
         if let Ok(forwarded_str) = forwarded.to_str() {
             if let Some(ip) = forwarded_str.split(',').next() {
@@ -78,6 +80,13 @@ pub async fn upload_file(
     mut payload: Multipart,
 ) -> impl Responder {
     let config = AppConfig::get();
+    if !crate::uploads::is_authorized(&req) {
+        return HttpResponse::Unauthorized().json(serde_json::json!({"error": "上传密码无效"}));
+    }
+    let client_ip = get_client_ip(&req);
+    if !is_upload_allowed(&state.ip_upload_records, &client_ip) {
+        return HttpResponse::TooManyRequests().json(serde_json::json!({"error": "今日上传次数已达上限"}));
+    }
     
     while let Some(item) = payload.next().await {
         let mut field = match item {
@@ -120,6 +129,11 @@ pub async fn upload_file(
                 }
             };
             total_size += data.len() as i64;
+            if total_size as u64 > crate::uploads::MAX_FILE_SIZE {
+                drop(f);
+                fs::remove_file(&filepath).ok();
+                return HttpResponse::PayloadTooLarge().json(serde_json::json!({"error": "文件超过 10 GB 限制"}));
+            }
             if f.write_all(&data).is_err() {
                 return HttpResponse::InternalServerError().json(serde_json::json!({"error": "写入文件失败"}));
             }
@@ -143,7 +157,6 @@ pub async fn upload_file(
             },
         );
 
-        let client_ip = get_client_ip(&req);
         increment_ip_upload_count(&state.ip_upload_records, &client_ip);
 
         log::info!("[UPLOAD] Upload success - code: {}, IP: {}", code, client_ip);
@@ -171,7 +184,20 @@ fn generate_unique_code(file_records: &FileRecords) -> String {
     }
 }
 
-fn increment_ip_upload_count(ip_records: &IpUploadRecords, client_ip: &str) {
+pub(crate) fn is_upload_allowed(ip_records: &IpUploadRecords, client_ip: &str) -> bool {
+    let limit = AppConfig::get().rate_limit.max_uploads_per_day;
+    if limit == 0 {
+        return true;
+    }
+    let now = now_timestamp();
+    ip_records
+        .read()
+        .get(client_ip)
+        .map(|record| !is_same_day(record.last_upload, now) || record.count < limit)
+        .unwrap_or(true)
+}
+
+pub(crate) fn increment_ip_upload_count(ip_records: &IpUploadRecords, client_ip: &str) {
     let mut records = ip_records.write();
     let now = now_timestamp();
     
@@ -319,31 +345,37 @@ pub async fn get_file_info(
     path: web::Path<String>,
 ) -> impl Responder {
     let code = path.to_uppercase();
-    let records = state.file_records.read();
-    
-    if let Some(record) = records.get(&code) {
-        let now = now_timestamp();
-        if now > record.expire_at {
-            return HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"}));
-        }
-        
-        HttpResponse::Ok().json(serde_json::json!({
-            "code": record.code,
-            "filename": record.filename,
-            "size": record.size,
-            "expire_at": chrono::DateTime::from_timestamp(record.expire_at, 0)
-                .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
-                .unwrap_or_default(),
-        }))
-    } else {
-        HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"}))
-    }
+    let record = state
+        .file_records
+        .read()
+        .get(&code)
+        .map(|value| (value.code.clone(), value.filename.clone(), value.size, value.expire_at))
+        .or_else(|| {
+            database::get_file_record(&state.db, &code)
+                .ok()
+                .flatten()
+                .map(|value| (value.code, value.filename, value.size, value.expire_at))
+        });
+    let (code, filename, size, expire_at) = match record {
+        Some(value) if now_timestamp() <= value.3 => value,
+        _ => return HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"})),
+    };
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "code": code,
+        "filename": filename,
+        "size": size,
+        "expire_at": chrono::DateTime::from_timestamp(expire_at, 0)
+            .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+            .unwrap_or_default(),
+    }))
 }
 
 pub async fn download_file(
     state: web::Data<AppState>,
+    req: HttpRequest,
     path: web::Path<String>,
-) -> impl Responder {
+) -> actix_web::Result<HttpResponse> {
     let code = path.to_uppercase();
     let now = now_timestamp();
     
@@ -351,7 +383,7 @@ pub async fn download_file(
         let mut records = state.file_records.write();
         if let Some(record) = records.get_mut(&code) {
             if now > record.expire_at {
-                return HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"}));
+                return Ok(HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"})));
             }
             
             if record.first_download_at.is_none() {
@@ -360,29 +392,37 @@ pub async fn download_file(
                 record.expire_at = now + config.retention.after_download_hours * 3600;
                 log::info!("文件 {} 首次被访问，将于 {} 小时后销毁", code, config.retention.after_download_hours);
             }
-        } else {
-            return HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"}));
         }
     }
-    
-    let records = state.file_records.read();
-    if let Some(record) = records.get(&code) {
-        match fs::read(&record.file_path) {
-            Ok(data) => {
-                let filename = urlencoding::encode(&record.filename);
-                HttpResponse::Ok()
-                    .content_type("application/octet-stream")
-                    .insert_header(("Content-Length", record.size))
-                    .insert_header(("Content-Disposition", 
-                        format!("attachment; filename=\"{}\"; filename*=UTF-8''{}", 
-                            record.filename, filename)))
-                    .body(data)
-            }
-            Err(_) => HttpResponse::InternalServerError().json(serde_json::json!({"error": "文件打开失败"}))
-        }
-    } else {
-        HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"}))
-    }
+
+    let file_info = state
+        .file_records
+        .read()
+        .get(&code)
+        .map(|record| (record.filename.clone(), record.file_path.clone(), record.expire_at))
+        .or_else(|| {
+            database::get_file_record(&state.db, &code)
+                .ok()
+                .flatten()
+                .map(|record| (record.filename, record.file_path, record.expire_at))
+        });
+    let (filename, file_path, _expire_at) = match file_info {
+        Some(value) if now <= value.2 => value,
+        _ => return Ok(HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"}))),
+    };
+    database::update_file_first_download(&state.db, &code).ok();
+
+    let file = match NamedFile::open_async(file_path).await {
+        Ok(value) => value,
+        Err(_) => return Ok(HttpResponse::InternalServerError().json(serde_json::json!({"error": "文件打开失败"}))),
+    };
+    Ok(file
+        .set_content_type(mime::APPLICATION_OCTET_STREAM)
+        .set_content_disposition(ContentDisposition {
+            disposition: DispositionType::Attachment,
+            parameters: vec![DispositionParam::Filename(filename)],
+        })
+        .into_response(&req))
 }
 
 pub async fn delete_file(
@@ -394,7 +434,10 @@ pub async fn delete_file(
     
     if let Some(record) = records.remove(&code) {
         fs::remove_file(&record.file_path).ok();
+    } else if let Ok(Some(record)) = database::get_file_record(&state.db, &code) {
+        fs::remove_file(&record.file_path).ok();
     }
+    database::delete_file_record(&state.db, &code).ok();
     
     HttpResponse::Ok().json(serde_json::json!({"message": "文件已销毁"}))
 }

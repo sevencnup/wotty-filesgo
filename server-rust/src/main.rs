@@ -3,6 +3,7 @@ mod crypto;
 mod database;
 mod handlers;
 mod models;
+mod uploads;
 mod websocket;
 
 use actix::Actor;
@@ -57,6 +58,8 @@ async fn cleanup_task(state: web::Data<AppState>) {
             }
             Err(e) => log::error!("Cleanup error: {}", e),
         }
+
+        uploads::cleanup_stale_sessions();
     }
 }
 
@@ -113,8 +116,11 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api")
                     .route("/verify-password", web::post().to(handlers::verify_password))
                     .route("/upload", web::post().to(handlers::upload_file))
-                    .route("/upload/chunk", web::post().to(handlers::upload_chunk))
-                    .route("/upload/complete", web::post().to(handlers::upload_complete))
+                    .route("/uploads", web::post().to(uploads::create_upload))
+                    .route("/uploads/{upload_id}", web::get().to(uploads::get_upload_status))
+                    .route("/uploads/{upload_id}", web::delete().to(uploads::cancel_upload))
+                    .route("/uploads/{upload_id}/chunks/{index}", web::put().to(uploads::upload_chunk))
+                    .route("/uploads/{upload_id}/complete", web::post().to(uploads::complete_upload))
                     .route("/file/{code}", web::get().to(handlers::get_file_info))
                     .route("/download/{code}", web::get().to(handlers::download_file))
                     .route("/file/{code}", web::delete().to(handlers::delete_file))
