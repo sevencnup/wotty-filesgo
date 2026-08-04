@@ -12,7 +12,7 @@ const translations = {
     passwordPlaceholder: '请输入上传密码',
     passwordHint: '需要密码才能上传文件',
     dropzoneText: '点击或拖拽文件',
-    dropzoneHint: '支持任意格式 · 最大 1GB',
+    dropzoneHint: '支持任意格式 · 最大 10GB',
     uploading: '正在上传...',
     waiting: '等待',
     uploadComplete: '上传完成',
@@ -43,7 +43,7 @@ const translations = {
     uploadTimeout: '上传超时',
     networkOrCancelled: '网络错误或上传被取消',
     confirmCancel: '确定要取消上传',
-    fileTooLarge: '超过 1GB 限制，已跳过',
+    fileTooLarge: '超过 10GB 限制，已跳过',
   }
 }
 
@@ -199,7 +199,7 @@ export default function HomePage() {
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return
-    const MAX_SIZE = 1 * 1024 * 1024 * 1024
+    const MAX_SIZE = 10 * 1024 * 1024 * 1024
     const newFiles: any[] = []
     
     for (let i = 0; i < files.length; i++) {
