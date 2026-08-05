@@ -4,6 +4,7 @@ RUN apt-get update && apt-get install -y build-essential pkg-config libsqlite3-d
 COPY server-rust/Cargo.toml server-rust/Cargo.lock ./
 COPY server-rust/src ./src
 COPY server-rust/config.yaml ./
+COPY server-rust/dist ./dist
 RUN cargo build --release --locked
 
 FROM debian:bookworm-slim
@@ -11,5 +12,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y libsqlite3-0 ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/filesgo-server /app/filesgo-server
 COPY --from=builder /app/config.yaml ./
+COPY --from=builder /app/dist ./dist
 EXPOSE 3003
 CMD ["./filesgo-server"]
