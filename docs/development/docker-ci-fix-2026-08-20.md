@@ -20,11 +20,12 @@
 2. 在 Rust 构建 Stage 里用 `COPY --from=frontend` 取 `frontend/dist` 作为服务端静态目录 `dist`。
 3. 运行时镜像结构不变（binary + config.yaml + dist），保持服务端读写 `dist/index.html`、`dist` 的契约。
 4. 重写 `frontend/package-lock.json` 的 `resolved` 主机为官方 `registry.npmjs.org`（仅改 host，URL 结构不变）；本地 `.npmrc` 仍指向 npmmirror，不影响国内开发体验。
+5. 进一步发现镜像生成的 `caniuse-lite@1.0.36561777` 是镜像伪造的幽灵版本，任何 registry 都解析不到（404），仅换 host 无法解决；改在隔离临时目录用官方 registry 重新生成 `frontend/package-lock.json`，本地 `node_modules` 不受影响。
 
 ## 实施
 
 - 重写根 [Dockerfile](Dockerfile) 为三阶段构建（frontend → rust builder → runtime）。
-- 批量替换 `frontend/package-lock.json` 中 `registry.npmmirror.com` → `registry.npmjs.org`。
+- 用官方 registry 在隔离临时目录重新生成 `frontend/package-lock.json`，替换被污染的镜像版本锁文件（临时目录用后即删）。
 
 ## 验收标准
 
