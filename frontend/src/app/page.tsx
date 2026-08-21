@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Image from 'next/image'
 import {
   CheckCircle2,
   ChevronRight,
@@ -15,7 +16,6 @@ import {
   Plus,
   Send,
   ShieldCheck,
-  Box,
   Upload,
   UserCircle,
   X,
@@ -342,7 +342,7 @@ export default function HomePage() {
       <header className="site-header">
         <div className="header-inner">
           <div className="brand-lockup">
-            <div className="brand-mark"><Box size={25} strokeWidth={2.3} /></div>
+            <div className="brand-mark"><Image src="/logo.png" alt="Logo" width={52} height={52} className="brand-logo" /></div>
             <div>
               <h1>{t.title}</h1>
               <p>{t.subtitle}</p>
@@ -360,13 +360,13 @@ export default function HomePage() {
             </button>
           </nav>
 
-          <div className="header-actions">
+          {/* <div className="header-actions">
             <button className="help-button" onClick={() => showToast('文件将在有效期后自动清理', 'info')}>
               <HelpCircle size={19} />
               <span>{t.help}</span>
             </button>
             <UserCircle className="avatar-icon" size={38} strokeWidth={1.5} />
-          </div>
+          </div> */}
         </div>
       </header>
 
