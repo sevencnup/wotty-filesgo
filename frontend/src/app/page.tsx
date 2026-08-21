@@ -445,7 +445,7 @@ export default function HomePage() {
             )}
 
             <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()} onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileSelect(e.dataTransfer.files) }}>
-              <div className="upload-illustration"><Image src="/upload.png" alt="上传文件" width={260} height={190} className="upload-image" /></div>
+              <div className="upload-illustration"><Image src="/download.png" alt="上传文件" width={320} height={160} className="upload-image" /></div>
               <h2>{t.dropzoneText}</h2>
               <p>{t.dropzoneHint}</p>
             </div>
@@ -518,12 +518,6 @@ export default function HomePage() {
               </button>
               <div className="receive-case-hint">取件码区分大小写</div>
               <div className={`receive-status ${receiveStatus.type === 'error' ? 'is-error' : receiveStatus.type === 'success' ? 'is-success' : ''}`}>{receiveStatus.text}</div>
-            </div>
-            <div className="receive-info-panel">
-              <Image src="/download.png" alt="下载文件" width={360} height={260} className="download-image" />
-              <h3>什么是取件码？</h3>
-              <p>取件码是文件的唯一提取凭证</p>
-              <p>输入正确的取件码后，即可安全下载文件。</p>
             </div>
           </div>
         )}
