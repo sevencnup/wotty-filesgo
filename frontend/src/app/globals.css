@@ -1181,20 +1181,24 @@
   }
 
   .security-footer {
-    align-items: flex-start;
+    align-items: center;
+    width: calc(100% - 24px);
     flex-direction: column;
     gap: 7px;
-    padding: 12px 15px;
+    padding: 12px 0;
     font-size: 11px;
+  }
+
+  .security-footer div,
+  .footer-copyright,
+  .security-footer button {
+    align-self: center;
+    justify-content: center;
+    width: 100%;
+    white-space: nowrap;
   }
 
   .security-footer button {
-    align-self: flex-end;
     font-size: 11px;
-  }
-
-  .footer-copyright {
-    align-self: center;
-    white-space: normal;
   }
 }
