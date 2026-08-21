@@ -1285,7 +1285,12 @@
     padding-bottom: 6px;
   }
 
-  .upload-illustration,
+  .upload-illustration {
+    display: grid;
+    height: 72px;
+    margin-bottom: 4px;
+  }
+
   .upload-dropzone p,
   .password-gate p,
   .code-note {
