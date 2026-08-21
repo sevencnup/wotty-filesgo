@@ -1,50 +1,89 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import Image from 'next/image'
+import {
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Copy,
+  Download,
+  FileText,
+  FolderOpen,
+  HelpCircle,
+  Link2,
+  LockKeyhole,
+  Plus,
+  Send,
+  ShieldCheck,
+  Box,
+  Upload,
+  UserCircle,
+  X,
+} from 'lucide-react'
 import { uploadFileResumable, UploadCancelledError } from '@/lib/resumable-upload'
 
 const translations = {
   zh: {
-    title: 'FilesGO',
-    subtitle: '安全 · 高效',
-    sendTab: '我要发送',
-    receiveTab: '我要接收',
+    title: '闪传',
+    subtitle: '安全 · 高效 · 便捷',
+    sendTab: '发送文件',
+    receiveTab: '接收文件',
     passwordPlaceholder: '请输入上传密码',
-    passwordHint: '需要密码才能上传文件',
-    dropzoneText: '点击或拖拽文件',
-    dropzoneHint: '最大 10GB · 分片加速 · 断点续传',
+    passwordLabel: '上传密码',
+    passwordHint: '验证密码后即可上传文件',
+    verify: '验证',
+    dropzoneText: '点击上传文件或拖拽到此处',
+    dropzoneHint: '单个文件最大 10GB，单次最多 20GB',
     uploading: '正在上传...',
-    waiting: '等待',
-    uploadComplete: '上传完成',
+    waiting: '等待上传',
     pickupCode: '取件码',
-    clickToCopy: '点击复制取件码',
+    clickToCopy: '取件码已复制，可分享给对方',
     shareLink: '分享链接',
     copyLink: '复制链接',
-    copyAllCodes: '复制全部取件码',
+    copyCode: '复制取件码',
+    shareCode: '分享取件码',
     continueSend: '继续发送',
+    addMore: '添加更多文件',
     enterCode: '输入 6 位取件码',
     downloadBtn: '立即下载',
     finding: '正在查找...',
     fileFound: '找到文件',
-    downloading: '正在下载...',
+    downloadStarted: '下载已开始',
     fileNotFound: '文件不存在或已过期',
     networkError: '网络错误',
-    downloadStarted: '下载已开始',
-    footer: '© 2026 星七七  FilesGO 文件传输· 2H Auto-Destruct',
+    validPeriod: '有效期',
+    validPeriodValue: '7 天后过期',
+    codeProtection: '取件码保护',
+    codeProtectionValue: '仅凭取件码可提取',
+    downloadLimit: '下载次数限制',
+    downloadLimitValue: '不限次数',
+    securityTip: '文件采用加密存储，保障您的数据安全',
+    securityMore: '了解更多安全说明',
+    help: '帮助中心',
     passwordError: '密码错误，请重新输入',
     passwordVerifyFailed: '密码验证失败',
-    copied: '已复制',
     codeCopied: '取件码已复制',
     linkCopied: '链接已复制',
     copyFailed: '复制失败，请手动复制',
     uploadFailed: '上传失败',
     uploadCancelled: '上传已取消',
-    uploadTimeout: '上传超时',
-    networkOrCancelled: '网络错误或上传被取消',
     confirmCancel: '确定要取消上传',
     fileTooLarge: '超过 10GB 限制，已跳过',
-  }
+    passwordRequired: '请先验证上传密码',
+  },
+}
+
+type UploadItem = {
+  id: string
+  file: File
+  status: 'waiting' | 'uploading'
+}
+
+type UploadResult = {
+  filename: string
+  code: string
+  size: number
+  download_url: string
 }
 
 export default function HomePage() {
@@ -52,10 +91,10 @@ export default function HomePage() {
   const [uploadPassword, setUploadPassword] = useState('')
   const [isPasswordVerified, setIsPasswordVerified] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
-  const [uploadQueue, setUploadQueue] = useState<any[]>([])
-  const [uploadResults, setUploadResults] = useState<any[]>([])
+  const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([])
+  const [uploadResults, setUploadResults] = useState<UploadResult[]>([])
   const [isUploading, setIsUploading] = useState(false)
-  const [currentUpload, setCurrentUpload] = useState<any>(null)
+  const [currentUpload, setCurrentUpload] = useState<{ filename: string; size: number } | null>(null)
   const [progress, setProgress] = useState(0)
   const [uploadSpeedBps, setUploadSpeedBps] = useState<number | null>(null)
   const [uploadEtaSec, setUploadEtaSec] = useState<number | null>(null)
@@ -63,7 +102,7 @@ export default function HomePage() {
   const [receiveStatus, setReceiveStatus] = useState({ text: '', type: '' })
   const [isDownloading, setIsDownloading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadControllerRef = useRef<AbortController | null>(null)
   const lastAutoCodeRef = useRef<string>('')
@@ -71,7 +110,7 @@ export default function HomePage() {
 
   const showToast = useCallback((message: string, type: string = 'info') => {
     setToast({ message, type })
-    setTimeout(() => setToast(null), 2000)
+    setTimeout(() => setToast(null), 2200)
   }, [])
 
   const formatSize = (bytes: number) => {
@@ -94,31 +133,8 @@ export default function HomePage() {
   const formatEta = (sec: number | null) => {
     if (sec === null || !isFinite(sec) || sec < 0) return '--'
     const s = Math.ceil(sec)
-    const m = Math.floor(s / 60)
-    const r = s % 60
-    return `${m}:${String(r).padStart(2, '0')}`
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   }
-
-  useEffect(() => {
-    const path = window.location.pathname
-    const urlParams = new URLSearchParams(window.location.search)
-    let potentialCode = urlParams.get('code')
-
-    if (!potentialCode) {
-      const match = path.match(/\/([A-Z0-9]{6})\/?$/i)
-      if (match && match[1]) {
-        potentialCode = match[1]
-      }
-    }
-
-    if (potentialCode) {
-      potentialCode = potentialCode.toUpperCase()
-      setCurrentTab('receive')
-      setReceiveCode(potentialCode)
-      lastAutoCodeRef.current = potentialCode
-      handleDownload(potentialCode)
-    }
-  }, [])
 
   const verifyPassword = async () => {
     if (!uploadPassword.trim()) return
@@ -127,17 +143,18 @@ export default function HomePage() {
       const res = await fetch('/api/verify-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: uploadPassword.trim() })
+        body: JSON.stringify({ password: uploadPassword.trim() }),
       })
       const data = await res.json()
 
       if (data.valid) {
         setIsPasswordVerified(true)
+        showToast('密码验证成功', 'success')
       } else {
         showToast(t.passwordError, 'error')
         setUploadPassword('')
       }
-    } catch (e) {
+    } catch {
       showToast(t.passwordVerifyFailed, 'error')
     }
     setIsVerifying(false)
@@ -145,25 +162,26 @@ export default function HomePage() {
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return
-    const MAX_SIZE = 10 * 1024 * 1024 * 1024
-    const newFiles: any[] = []
-    
+    if (!isPasswordVerified) {
+      showToast(t.passwordRequired, 'error')
+      return
+    }
+
+    const maxSize = 10 * 1024 * 1024 * 1024
+    const newFiles: UploadItem[] = []
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      if (file.size > MAX_SIZE) {
+      if (file.size > maxSize) {
         showToast(`${file.name} ${t.fileTooLarge}`, 'error')
         continue
       }
       newFiles.push({
         id: Date.now() + Math.random().toString(36).substring(2),
         file,
-        status: 'waiting'
+        status: 'waiting',
       })
     }
-    
-    if (newFiles.length > 0) {
-      setUploadQueue(prev => [...prev, ...newFiles])
-    }
+    if (newFiles.length > 0) setUploadQueue((prev) => [...prev, ...newFiles])
   }
 
   const removeFromQueue = (index: number) => {
@@ -171,13 +189,10 @@ export default function HomePage() {
     if (!item) return
 
     if (item.status === 'uploading') {
-      if (confirm(`${t.confirmCancel} "${item.file.name}"?`)) {
-        uploadControllerRef.current?.abort()
-      }
+      if (confirm(`${t.confirmCancel} "${item.file.name}"?`)) uploadControllerRef.current?.abort()
       return
     }
-    
-    setUploadQueue(prev => prev.filter((_, i) => i !== index))
+    setUploadQueue((prev) => prev.filter((_, i) => i !== index))
   }
 
   const uploadSingleFile = async (file: File) => {
@@ -201,66 +216,58 @@ export default function HomePage() {
 
   const processQueue = useCallback(async () => {
     if (isUploading || uploadQueue.length === 0) return
-    
-    const waitingIndex = uploadQueue.findIndex(item => item.status === 'waiting')
+    const waitingIndex = uploadQueue.findIndex((item) => item.status === 'waiting')
     if (waitingIndex === -1) return
-    
+
     setIsUploading(true)
     const currentItem = uploadQueue[waitingIndex]
-    
-    setUploadQueue(prev => prev.map((item, i) => 
-      i === waitingIndex ? { ...item, status: 'uploading' } : item
-    ))
-    
+    setUploadQueue((prev) => prev.map((item, i) => (i === waitingIndex ? { ...item, status: 'uploading' } : item)))
     setCurrentUpload({ filename: currentItem.file.name, size: currentItem.file.size })
     setProgress(0)
     setUploadSpeedBps(null)
     setUploadEtaSec(null)
-    
+
     try {
       const result = await uploadSingleFile(currentItem.file)
-      
-      setUploadResults(prev => [...prev, {
-        filename: currentItem.file.name,
-        code: result.code,
-        size: currentItem.file.size,
-        download_url: window.location.origin + '/?code=' + result.code
-      }])
-      
-      setUploadQueue(prev => prev.filter((_, i) => i !== waitingIndex))
+      setUploadResults((prev) => [
+        ...prev,
+        {
+          filename: currentItem.file.name,
+          code: result.code,
+          size: currentItem.file.size,
+          download_url: window.location.origin + '/?code=' + result.code,
+        },
+      ])
+      setUploadQueue((prev) => prev.filter((_, i) => i !== waitingIndex))
     } catch (e: any) {
-      const message = e instanceof UploadCancelledError ? t.uploadCancelled : (e.message || t.uploadFailed)
+      const message = e instanceof UploadCancelledError ? t.uploadCancelled : e.message || t.uploadFailed
       showToast(`${currentItem.file.name} ${message}`, 'error')
-      setUploadQueue(prev => prev.filter((_, i) => i !== waitingIndex))
+      setUploadQueue((prev) => prev.filter((_, i) => i !== waitingIndex))
     }
-    
+
     setIsUploading(false)
     setCurrentUpload(null)
-  }, [isUploading, uploadQueue, uploadPassword, setProgress])
+  }, [isUploading, uploadQueue, uploadPassword, showToast])
 
   useEffect(() => {
-    if (uploadQueue.some(item => item.status === 'waiting') && !isUploading) {
-      processQueue()
-    }
+    if (uploadQueue.some((item) => item.status === 'waiting') && !isUploading) processQueue()
   }, [uploadQueue, isUploading, processQueue])
 
   const handleDownload = async (code: string) => {
     const normalized = code.trim().toUpperCase()
     if (normalized.length !== 6) {
-      setReceiveStatus({ text: '请输入 6 位提取码', type: 'error' })
+      setReceiveStatus({ text: '请输入 6 位取件码', type: 'error' })
       return
     }
 
     setIsDownloading(true)
     setReceiveStatus({ text: t.finding, type: 'info' })
-
     try {
       const res = await fetch(`/api/file/${normalized}`)
       if (res.ok) {
         const file = await res.json()
         setReceiveStatus({ text: `${t.fileFound}: ${file.filename} (${formatSize(file.size)})`, type: 'success' })
         window.location.href = `/api/download/${normalized}`
-
         setTimeout(() => {
           setIsDownloading(false)
           setReceiveStatus({ text: t.downloadStarted, type: 'info' })
@@ -274,6 +281,23 @@ export default function HomePage() {
       setIsDownloading(false)
     }
   }
+
+  useEffect(() => {
+    const path = window.location.pathname
+    const urlParams = new URLSearchParams(window.location.search)
+    let potentialCode = urlParams.get('code')
+    if (!potentialCode) {
+      const match = path.match(/\/([A-Z0-9]{6})\/?$/i)
+      if (match && match[1]) potentialCode = match[1]
+    }
+    if (potentialCode) {
+      potentialCode = potentialCode.toUpperCase()
+      setCurrentTab('receive')
+      setReceiveCode(potentialCode)
+      lastAutoCodeRef.current = potentialCode
+      handleDownload(potentialCode)
+    }
+  }, [])
 
   const copyToClipboard = async (text: string, successMessage: string) => {
     try {
@@ -308,236 +332,149 @@ export default function HomePage() {
     setUploadEtaSec(null)
   }
 
+  const primaryResult = uploadResults[0]
+  const displayCode = primaryResult?.code || '------'
+
   return (
-    <div className="h-screen text-slate-800 font-sans flex flex-col relative overflow-hidden">
+    <main className="flash-page">
+      {toast && <div className={`flash-toast ${toast.type === 'error' ? 'is-error' : toast.type === 'success' ? 'is-success' : ''}`}>{toast.message}</div>}
 
-      {toast && (
-        <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg z-50 ${
-          toast.type === 'error' ? 'bg-red-500' : toast.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
-        } text-white`}>
-          {toast.message}
-        </div>
-      )}
-
-      <div className="container mx-auto px-4 py-4 md:py-8 max-w-xl flex-grow flex flex-col justify-center">
-        <header className="mb-1 md:mb-3 flex items-center justify-center gap-x-3 md:gap-x-5">
-          <div className="inline-flex items-center justify-center shrink-0">
-            <Image src="/logo.png" alt="Logo" width={200} height={200} className="w-28 h-28 md:w-44 md:h-44 object-contain" />
+      <header className="site-header">
+        <div className="header-inner">
+          <div className="brand-lockup">
+            <div className="brand-mark"><Box size={25} strokeWidth={2.3} /></div>
+            <div>
+              <h1>{t.title}</h1>
+              <p>{t.subtitle}</p>
+            </div>
           </div>
-          <div className="text-left">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-0 md:mb-1 tracking-tight">{t.title}</h1>
-            <p className="text-slate-500 text-sm md:text-base font-medium">{t.subtitle}</p>
-          </div>
-        </header>
 
-        <div className="glass rounded-3xl border-[0.5px] border-white/20 overflow-hidden transition-all duration-300">
-          <div className="flex border-b border-slate-100">
-            <button
-              onClick={() => setCurrentTab('send')}
-              className={`flex-1 py-4 md:py-5 text-center text-sm tracking-wide transition-all ${currentTab === 'send' ? 'tab-active' : 'tab-inactive'}`}
-            >
+          <nav className="main-nav" aria-label="主导航">
+            <button className={`nav-item ${currentTab === 'send' ? 'is-active' : ''}`} onClick={() => setCurrentTab('send')}>
+              <Send size={19} strokeWidth={2.3} />
               {t.sendTab}
             </button>
-            <button
-              onClick={() => setCurrentTab('receive')}
-              className={`flex-1 py-4 md:py-5 text-center text-sm tracking-wide transition-all ${currentTab === 'receive' ? 'tab-active' : 'tab-inactive'}`}
-            >
+            <button className={`nav-item ${currentTab === 'receive' ? 'is-active' : ''}`} onClick={() => setCurrentTab('receive')}>
+              <Download size={19} strokeWidth={2.3} />
               {t.receiveTab}
             </button>
-          </div>
+          </nav>
 
-          <div className="p-5 md:p-7 min-h-[280px] md:min-h-[340px] flex flex-col justify-center">
-            {currentTab === 'send' ? (
-              <div className="space-y-6">
-                {!isPasswordVerified ? (
-                  <div>
-                    <div className="relative">
-                      <input
-                        type="password"
-                        value={uploadPassword}
-                        onChange={(e) => setUploadPassword(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !isVerifying) { e.preventDefault(); verifyPassword() } }}
-                        onBlur={() => uploadPassword.trim() && !isVerifying && verifyPassword()}
-                        disabled={isVerifying}
-                        placeholder={t.passwordPlaceholder}
-                        className="block w-full px-4 py-4 text-base text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 bg-slate-50 transition-all outline-none disabled:opacity-50 disabled:cursor-wait"
-                      />
-                      {isVerifying && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-2 ml-1">{t.passwordHint}</p>
-                  </div>
-                ) : (
-                  <div className="animate-fadeIn">
-                    {uploadQueue.length > 0 && (
-                      <div className="space-y-3">
-                        {uploadQueue.map((item, index) => (
-                          <div key={item.id} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
-                                <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-slate-700 truncate">{item.file.name}</p>
-                                <p className="text-xs text-slate-400">{formatSize(item.file.size)}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {item.status === 'uploading' ? (
-                                <span className="text-xs text-blue-600 font-medium animate-pulse">{t.uploading}</span>
-                              ) : (
-                                <span className="text-xs text-slate-400">{t.waiting}</span>
-                              )}
-                              <button onClick={() => removeFromQueue(index)} className="p-1 hover:bg-red-100 rounded-lg transition-colors">
-                                <svg className="w-4 h-4 text-slate-400 hover:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {currentUpload && (
-                      <div className="text-center py-4">
-                        <p className="text-slate-600 font-medium mb-3">{t.uploading}: {currentUpload.filename}</p>
-                        <div className="w-full max-w-xs mx-auto mb-2">
-                          <div className="h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                            <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{ width: `${progress}%` }}></div>
-                          </div>
-                        </div>
-                        <p className="text-sm text-slate-400 font-medium">{Math.round(progress)}%</p>
-                        <p className="text-xs text-slate-400 mt-1">{formatSpeed(uploadSpeedBps)} · 剩余 {formatEta(uploadEtaSec)}</p>
-                      </div>
-                    )}
-
-                    {uploadResults.length > 0 && (
-                      <div className="space-y-4">
-                        {uploadResults.map((result, index) => (
-                          <div key={index} className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-5">
-                            <div className="flex items-start justify-between mb-3">
-                              <p className="text-slate-700 text-sm font-medium truncate pr-2">{result.filename}</p>
-                              <span className="text-xs text-slate-400 whitespace-nowrap bg-blue-100/50 px-2 py-0.5 rounded">{t.pickupCode}</span>
-                            </div>
-                            <div
-                              onClick={() => copyToClipboard(result.code, t.codeCopied)}
-                              className="text-3xl font-mono font-bold tracking-[0.15em] text-blue-600 cursor-pointer hover:bg-blue-200/50 rounded-xl p-3 transition-all text-center mb-3 select-all"
-                            >
-                              {result.code}
-                            </div>
-                            <p className="text-xs text-slate-400 text-center mb-4">{t.clickToCopy}</p>
-
-                            <div className="border-t border-blue-200/50 pt-4 mt-2">
-                              <p className="text-xs text-slate-400 mb-2 text-left">{t.shareLink}</p>
-                              <div className="flex items-center gap-2 bg-white/80 rounded-xl p-2.5 border border-blue-200/50 shadow-sm">
-                                <input type="text" readOnly className="flex-1 text-xs text-slate-600 bg-transparent outline-none font-mono truncate" value={result.download_url} />
-                                <button onClick={() => copyToClipboard(result.download_url, t.linkCopied)} className="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap">
-                                  {t.copyLink}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        <div className="bg-slate-50/80 border border-slate-200/50 rounded-xl p-4 flex items-center justify-center gap-4">
-                          <button onClick={resetUpload} className="text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors flex items-center gap-1.5">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                            </svg>
-                            {t.continueSend}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {!currentUpload && uploadQueue.length === 0 && uploadResults.length === 0 && (
-                      <div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          multiple
-                          onChange={(e) => handleFileSelect(e.target.files)}
-                          className="hidden"
-                        />
-                        <label
-                          onClick={() => fileInputRef.current?.click()}
-                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                          onDrop={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleFileSelect(e.dataTransfer.files)
-                          }}
-                          className="flex flex-col items-center justify-center w-full h-52 md:h-60 border-2 border-slate-200 border-dashed rounded-2xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group relative overflow-hidden"
-                        >
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6 z-10">
-                            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                              <svg className="w-8 h-8 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                              </svg>
-                            </div>
-                            <p className="mb-2 text-base font-medium text-slate-600">{t.dropzoneText}</p>
-                            <p className="text-xs text-slate-400">{t.dropzoneHint}</p>
-                          </div>
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-3 ml-1">{t.enterCode}</label>
-                  <input
-                    type="text"
-                    value={receiveCode}
-                    onChange={(e) => {
-                      const value = e.target.value.toUpperCase()
-                      setReceiveCode(value)
-                      if (value.length === 6 && value !== lastAutoCodeRef.current) {
-                        lastAutoCodeRef.current = value
-                        handleDownload(value)
-                      }
-                    }}
-                    maxLength={6}
-                    placeholder="A1B2C3"
-                    disabled={isDownloading}
-                    className="block w-full px-4 py-5 text-2xl font-mono text-center text-slate-800 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-blue-500 focus:bg-white placeholder-slate-300 uppercase tracking-[0.2em] bg-slate-50 transition-all outline-none disabled:opacity-50 disabled:cursor-wait"
-                  />
-                </div>
-                <button
-                  onClick={() => handleDownload(receiveCode)}
-                  disabled={isDownloading}
-                  className="w-full bg-blue-600 text-white py-4 rounded-xl text-base font-semibold hover:bg-blue-700 active:transform active:scale-[0.98] transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                >
-                  {isDownloading ? t.finding : t.downloadBtn}
-                </button>
-                <div className={`text-center text-xs min-h-[20px] font-medium ${
-                  receiveStatus.type === 'error' ? 'text-red-500' :
-                  receiveStatus.type === 'success' ? 'text-green-600' : 'text-slate-400'
-                }`}>
-                  {receiveStatus.text}
-                </div>
-              </div>
-            )}
+          <div className="header-actions">
+            <button className="help-button" onClick={() => showToast('文件将在有效期后自动清理', 'info')}>
+              <HelpCircle size={19} />
+              <span>{t.help}</span>
+            </button>
+            <UserCircle className="avatar-icon" size={38} strokeWidth={1.5} />
           </div>
         </div>
+      </header>
 
-        <footer className="mt-6 md:mt-8 text-center">
-          <p className="text-slate-400 text-xs font-medium tracking-widest uppercase mb-3">
-            {t.footer}
-          </p>
-        </footer>
-      </div>
-    </div>
+      <section className="workspace">
+        {currentTab === 'send' ? (
+          <div className="upload-card panel-card">
+            <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFileSelect(e.target.files)} className="visually-hidden" />
+
+            {!isPasswordVerified && (
+              <div className="password-gate">
+                <div className="password-gate-title"><LockKeyhole size={16} /> {t.passwordLabel}</div>
+                <div className="password-gate-controls">
+                  <input
+                    type="password"
+                    value={uploadPassword}
+                    onChange={(e) => setUploadPassword(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !isVerifying) verifyPassword() }}
+                    placeholder={t.passwordPlaceholder}
+                    disabled={isVerifying}
+                  />
+                  <button onClick={verifyPassword} disabled={isVerifying || !uploadPassword.trim()}>{isVerifying ? '验证中' : t.verify}</button>
+                </div>
+                <p>{t.passwordHint}</p>
+              </div>
+            )}
+
+            <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()} onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileSelect(e.dataTransfer.files) }}>
+              <div className="upload-illustration"><FolderOpen size={52} strokeWidth={1.6} /><Upload className="upload-arrow" size={22} strokeWidth={2.6} /></div>
+              <h2>{t.dropzoneText}</h2>
+              <p>{t.dropzoneHint}</p>
+              <button className="choose-file-button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}><FolderOpen size={18} /> 选择文件</button>
+            </div>
+
+            {currentUpload && (
+              <div className="upload-progress">
+                <div className="upload-progress-heading"><span>{t.uploading}</span><strong>{Math.round(progress)}%</strong></div>
+                <p>{currentUpload.filename} · {formatSize(currentUpload.size)}</p>
+                <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>
+                <small>{formatSpeed(uploadSpeedBps)} · 剩余 {formatEta(uploadEtaSec)}</small>
+              </div>
+            )}
+
+            {uploadQueue.length > 0 && (
+              <div className="file-list">
+                {uploadQueue.map((item, index) => (
+                  <div key={item.id} className="file-row">
+                    <div className="file-type-icon"><FileText size={20} /></div>
+                    <div className="file-meta"><strong title={item.file.name}>{item.file.name}</strong><span>{formatSize(item.file.size)}</span></div>
+                    <span className={`file-status ${item.status === 'uploading' ? 'is-uploading' : ''}`}>{item.status === 'uploading' ? t.uploading : t.waiting}</span>
+                    <button className="icon-button" onClick={() => removeFromQueue(index)} aria-label="移除文件"><X size={18} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {uploadResults.length > 0 && (
+              <div className="result-list">
+                {uploadResults.map((result, index) => (
+                  <div className="result-inline" key={`${result.code}-${index}`}>
+                    <CheckCircle2 size={19} />
+                    <span>{result.filename}</span>
+                    <button onClick={() => copyToClipboard(result.code, t.codeCopied)}>{result.code}</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!currentUpload && isPasswordVerified && (
+              <button className="add-files-button" onClick={() => fileInputRef.current?.click()}><Plus size={18} /> {t.addMore}</button>
+            )}
+            {uploadResults.length > 0 && <button className="continue-button" onClick={resetUpload}>{t.continueSend}<ChevronRight size={17} /></button>}
+          </div>
+        ) : (
+          <div className="receive-card panel-card">
+            <div className="receive-hero"><div className="receive-illustration"><Download size={42} /></div><h2>输入取件码即可下载</h2><p>文件安全传输，过期自动清理</p></div>
+            <label htmlFor="receive-code">{t.enterCode}</label>
+            <input id="receive-code" type="text" value={receiveCode} onChange={(e) => { const value = e.target.value.toUpperCase(); setReceiveCode(value); if (value.length === 6 && value !== lastAutoCodeRef.current) { lastAutoCodeRef.current = value; handleDownload(value) } }} maxLength={6} placeholder="A1B2C3" disabled={isDownloading} />
+            <button className="download-button" onClick={() => handleDownload(receiveCode)} disabled={isDownloading}><Download size={19} /> {isDownloading ? t.finding : t.downloadBtn}</button>
+            <div className={`receive-status ${receiveStatus.type === 'error' ? 'is-error' : receiveStatus.type === 'success' ? 'is-success' : ''}`}>{receiveStatus.text}</div>
+          </div>
+        )}
+
+        <aside className="share-card panel-card">
+          <h2>文件已准备好分享</h2>
+          <div className="code-display" onClick={() => primaryResult && copyToClipboard(primaryResult.code, t.codeCopied)} role={primaryResult ? 'button' : undefined} tabIndex={primaryResult ? 0 : undefined}>
+            {displayCode.split('').map((digit, index) => <span key={`${digit}-${index}`} className={!primaryResult ? 'is-placeholder' : ''}>{digit}</span>)}
+          </div>
+          <div className="code-note"><CheckCircle2 size={17} /> {primaryResult ? t.clickToCopy : '上传完成后将在这里生成取件码'}</div>
+
+          <div className="share-details">
+            <div className="detail-row"><Clock3 size={19} /><strong>{t.validPeriod}</strong><span>{t.validPeriodValue}</span></div>
+            <div className="detail-row"><ShieldCheck size={19} /><strong>{t.codeProtection}</strong><span>{t.codeProtectionValue}</span></div>
+            <div className="detail-row"><Download size={19} /><strong>{t.downloadLimit}</strong><span>{t.downloadLimitValue}</span></div>
+          </div>
+
+          <div className="share-actions">
+            <button className="secondary-action" disabled={!primaryResult} onClick={() => primaryResult && copyToClipboard(primaryResult.code, t.codeCopied)}><Copy size={18} /> {t.copyCode}</button>
+            <button className="primary-action" disabled={!primaryResult} onClick={() => primaryResult && copyToClipboard(primaryResult.download_url, t.linkCopied)}><Link2 size={18} /> {t.shareCode}</button>
+          </div>
+
+          {primaryResult && <div className="share-link-row"><span>{primaryResult.download_url}</span><button onClick={() => copyToClipboard(primaryResult.download_url, t.linkCopied)}><Copy size={15} /></button></div>}
+        </aside>
+      </section>
+
+      <footer className="security-footer">
+        <div><ShieldCheck size={19} /><span>{t.securityTip}</span></div>
+        <button onClick={() => showToast('文件将在有效期后自动清理', 'info')}>{t.securityMore} <ChevronRight size={17} /></button>
+      </footer>
+    </main>
   )
 }

@@ -6,8 +6,8 @@ import { PageTransition } from '@/components/page-transition'
 const manrope = Manrope({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'FilesGO - 简单的文件传输',
-  description: '安全 · 高效的文件传输服务',
+  title: '闪传 - 安全、高效、便捷的文件传输',
+  description: '安全、高效、便捷的文件传输服务',
 }
 
 export default function RootLayout({
