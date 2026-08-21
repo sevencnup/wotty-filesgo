@@ -1231,8 +1231,16 @@
     height: auto;
   }
 
+  .upload-card {
+    padding-bottom: 5px;
+  }
+
+  .upload-dropzone {
+    padding-bottom: 4px;
+  }
+
   .upload-dropzone p {
-    margin: 6px 0 10px;
+    margin: 6px 0 4px;
   }
 
   .share-card h2 {
@@ -1312,8 +1320,16 @@
     display: block;
   }
 
+  .upload-card {
+    padding-bottom: 5px;
+  }
+
+  .upload-dropzone {
+    padding-bottom: 4px;
+  }
+
   .upload-dropzone p {
-    margin: 4px 0 8px;
+    margin: 4px 0 4px;
   }
 
   .password-gate p,
