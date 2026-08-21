@@ -20,7 +20,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/logo.png" />
       </head>
-      <body className={`${manrope.className} h-screen overflow-hidden`}>
+      <body className={`${manrope.className} min-h-screen`}>
         <PageTransition>
           {children}
         </PageTransition>

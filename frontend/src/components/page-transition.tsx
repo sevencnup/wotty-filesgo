@@ -79,11 +79,9 @@ export function PageTransition({ children }: PageTransitionProps) {
   const transition = `transform ${PAGE_TRANSITION_MS}ms ${PAGE_TRANSITION_EASING}`
 
   const layerBase: CSSProperties = {
-    position: 'absolute',
-    inset: 0,
+    position: 'relative',
     width: '100%',
-    height: '100%',
-    contain: 'paint',
+    minHeight: '100vh',
     willChange: 'transform',
     backfaceVisibility: 'hidden',
     transform: 'translate3d(0, 0, 0)',
@@ -119,7 +117,7 @@ export function PageTransition({ children }: PageTransitionProps) {
   })()
 
   return (
-    <div className="relative w-full h-full overflow-hidden" style={{ contain: 'layout paint' }}>
+    <div className="relative w-full min-h-screen overflow-x-hidden">
       <div
         className="absolute inset-0 -z-10 pointer-events-none"
         style={{
