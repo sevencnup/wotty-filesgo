@@ -16,7 +16,6 @@ import {
   Plus,
   Send,
   ShieldCheck,
-  Upload,
   UserCircle,
   X,
 } from 'lucide-react'
@@ -99,11 +98,13 @@ export default function HomePage() {
   const [uploadSpeedBps, setUploadSpeedBps] = useState<number | null>(null)
   const [uploadEtaSec, setUploadEtaSec] = useState<number | null>(null)
   const [receiveCode, setReceiveCode] = useState('')
+  const [receiveCodeSlots, setReceiveCodeSlots] = useState<string[]>(() => Array(6).fill(''))
   const [receiveStatus, setReceiveStatus] = useState({ text: '', type: '' })
   const [isDownloading, setIsDownloading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const receiveInputRefs = useRef<Array<HTMLInputElement | null>>([])
   const uploadControllerRef = useRef<AbortController | null>(null)
   const lastAutoCodeRef = useRef<string>('')
   const t = translations.zh
@@ -282,6 +283,57 @@ export default function HomePage() {
     }
   }
 
+  const updateReceiveSlots = (slots: string[], autoDownload = true) => {
+    const normalizedSlots = slots.slice(0, 6).map((slot) => slot.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(-1))
+    while (normalizedSlots.length < 6) normalizedSlots.push('')
+    const normalized = normalizedSlots.join('')
+    setReceiveCodeSlots(normalizedSlots)
+    setReceiveCode(normalized)
+    if (autoDownload && normalized.length === 6 && normalized !== lastAutoCodeRef.current) {
+      lastAutoCodeRef.current = normalized
+      handleDownload(normalized)
+    }
+    return normalized
+  }
+
+  const updateReceiveCode = (value: string, autoDownload = true) => {
+    const normalized = value.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 6)
+    return updateReceiveSlots(normalized.split(''), autoDownload)
+  }
+
+  const focusReceiveInput = (index: number) => {
+    receiveInputRefs.current[index]?.focus()
+    receiveInputRefs.current[index]?.select()
+  }
+
+  const handleReceiveInput = (index: number, value: string) => {
+    const character = value.replace(/[^a-z0-9]/gi, '').toUpperCase().slice(-1)
+    const nextSlots = [...receiveCodeSlots]
+    nextSlots[index] = character
+    updateReceiveSlots(nextSlots)
+    if (character && index < 5) focusReceiveInput(index + 1)
+  }
+
+  const handleReceiveKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Backspace' && !receiveCodeSlots[index] && index > 0) {
+      event.preventDefault()
+      const nextSlots = [...receiveCodeSlots]
+      nextSlots[index - 1] = ''
+      updateReceiveSlots(nextSlots, false)
+      focusReceiveInput(index - 1)
+    }
+  }
+
+  const handleReceivePaste = (index: number, event: React.ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    const pasted = event.clipboardData.getData('text').replace(/[^a-z0-9]/gi, '').toUpperCase().slice(0, 6 - index)
+    if (!pasted) return
+    const nextSlots = [...receiveCodeSlots]
+    pasted.split('').forEach((character, offset) => { nextSlots[index + offset] = character })
+    updateReceiveSlots(nextSlots)
+    focusReceiveInput(Math.min(index + pasted.length, 5))
+  }
+
   useEffect(() => {
     const path = window.location.pathname
     const urlParams = new URLSearchParams(window.location.search)
@@ -293,7 +345,7 @@ export default function HomePage() {
     if (potentialCode) {
       potentialCode = potentialCode.toUpperCase()
       setCurrentTab('receive')
-      setReceiveCode(potentialCode)
+      updateReceiveCode(potentialCode, false)
       lastAutoCodeRef.current = potentialCode
       handleDownload(potentialCode)
     }
@@ -394,7 +446,7 @@ export default function HomePage() {
             )}
 
             <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()} onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileSelect(e.dataTransfer.files) }}>
-              <div className="upload-illustration"><FolderOpen size={52} strokeWidth={1.6} /><Upload className="upload-arrow" size={22} strokeWidth={2.6} /></div>
+              <div className="upload-illustration"><Image src="/upload.png" alt="上传文件" width={260} height={190} className="upload-image" /></div>
               <h2>{t.dropzoneText}</h2>
               <p>{t.dropzoneHint}</p>
               <button className="choose-file-button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}><FolderOpen size={18} /> 选择文件</button>
@@ -441,11 +493,40 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="receive-card panel-card">
-            <div className="receive-hero"><div className="receive-illustration"><Download size={42} /></div><h2>输入取件码即可下载</h2><p>文件安全传输，过期自动清理</p></div>
-            <label htmlFor="receive-code">{t.enterCode}</label>
-            <input id="receive-code" type="text" value={receiveCode} onChange={(e) => { const value = e.target.value.toUpperCase(); setReceiveCode(value); if (value.length === 6 && value !== lastAutoCodeRef.current) { lastAutoCodeRef.current = value; handleDownload(value) } }} maxLength={6} placeholder="A1B2C3" disabled={isDownloading} />
-            <button className="download-button" onClick={() => handleDownload(receiveCode)} disabled={isDownloading}><Download size={19} /> {isDownloading ? t.finding : t.downloadBtn}</button>
-            <div className={`receive-status ${receiveStatus.type === 'error' ? 'is-error' : receiveStatus.type === 'success' ? 'is-success' : ''}`}>{receiveStatus.text}</div>
+            <div className="receive-form-panel">
+              <h2>输入取件码提取文件</h2>
+              <p className="receive-description">请向发送方获取取件码，并输入下方输入框</p>
+              <div className="receive-code-inputs" role="group" aria-label="6 位取件码">
+                {Array.from({ length: 6 }, (_, index) => (
+                  <input
+                    key={index}
+                    ref={(element) => { receiveInputRefs.current[index] = element }}
+                    className="receive-code-input"
+                    type="text"
+                    inputMode="text"
+                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                    maxLength={1}
+                    value={receiveCodeSlots[index]}
+                    onChange={(e) => handleReceiveInput(index, e.target.value)}
+                    onKeyDown={(e) => handleReceiveKeyDown(index, e)}
+                    onPaste={(e) => handleReceivePaste(index, e)}
+                    disabled={isDownloading}
+                    aria-label={`取件码第 ${index + 1} 位`}
+                  />
+                ))}
+              </div>
+              <button className="download-button" onClick={() => handleDownload(receiveCode)} disabled={isDownloading}>
+                <Download size={19} /> {isDownloading ? t.finding : '提取文件'}
+              </button>
+              <div className="receive-case-hint">取件码区分大小写</div>
+              <div className={`receive-status ${receiveStatus.type === 'error' ? 'is-error' : receiveStatus.type === 'success' ? 'is-success' : ''}`}>{receiveStatus.text}</div>
+            </div>
+            <div className="receive-info-panel">
+              <Image src="/download.png" alt="下载文件" width={360} height={260} className="download-image" />
+              <h3>什么是取件码？</h3>
+              <p>取件码是文件的唯一提取凭证</p>
+              <p>输入正确的取件码后，即可安全下载文件。</p>
+            </div>
           </div>
         )}
 
