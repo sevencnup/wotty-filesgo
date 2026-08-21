@@ -1219,8 +1219,15 @@
   }
 
   .upload-illustration {
-    height: 48px;
+    width: min(100%, 230px);
+    height: auto;
+    min-height: 0;
     margin-bottom: 6px;
+    overflow: visible;
+  }
+
+  .upload-image {
+    height: auto;
   }
 
   .upload-dropzone p {
@@ -1287,8 +1294,15 @@
 
   .upload-illustration {
     display: grid;
-    height: 112px;
+    width: min(100%, 230px);
+    height: auto;
+    min-height: 0;
     margin-bottom: 4px;
+    overflow: visible;
+  }
+
+  .upload-image {
+    height: auto;
   }
 
   .upload-dropzone p,
