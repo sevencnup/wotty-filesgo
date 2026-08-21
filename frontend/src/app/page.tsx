@@ -556,6 +556,7 @@ export default function HomePage() {
 
       <footer className="security-footer">
         <div><ShieldCheck size={19} /><span>{t.securityTip}</span></div>
+        <span className="footer-copyright">© 2026 星七七 FilesGO 文件传输 · 2H Auto-Destruct</span>
         <button onClick={() => showToast('文件将在有效期后自动清理', 'info')}>{t.securityMore} <ChevronRight size={17} /></button>
       </footer>
     </main>
