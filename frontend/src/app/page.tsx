@@ -9,7 +9,6 @@ import {
   Copy,
   Download,
   FileText,
-  FolderOpen,
   HelpCircle,
   Link2,
   LockKeyhole,
@@ -449,7 +448,6 @@ export default function HomePage() {
               <div className="upload-illustration"><Image src="/upload.png" alt="上传文件" width={260} height={190} className="upload-image" /></div>
               <h2>{t.dropzoneText}</h2>
               <p>{t.dropzoneHint}</p>
-              <button className="choose-file-button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}><FolderOpen size={18} /> 选择文件</button>
             </div>
 
             {currentUpload && (
