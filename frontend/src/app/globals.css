@@ -1202,3 +1202,128 @@
     font-size: 11px;
   }
 }
+
+@media (max-width: 620px) {
+  .workspace:not(.is-receive) {
+    gap: 12px;
+  }
+
+  .upload-card,
+  .share-card {
+    padding: 12px 15px 14px;
+  }
+
+  .upload-dropzone {
+    min-height: 158px;
+    padding-top: 8px;
+  }
+
+  .upload-illustration {
+    height: 48px;
+    margin-bottom: 6px;
+  }
+
+  .upload-dropzone p {
+    margin: 6px 0 10px;
+  }
+
+  .share-card h2 {
+    margin-bottom: 12px;
+  }
+
+  .code-display {
+    margin-bottom: 9px;
+  }
+
+  .code-display span {
+    height: 46px;
+  }
+
+  .share-details {
+    gap: 4px;
+    margin-top: 12px;
+  }
+
+  .detail-row {
+    min-height: 34px;
+    padding: 5px 11px;
+  }
+
+  .share-actions {
+    margin-top: 12px;
+  }
+
+  .secondary-action,
+  .primary-action {
+    min-height: 40px;
+  }
+
+  .share-link-row {
+    margin-top: 10px;
+  }
+
+  .workspace:not(.is-receive) ~ .security-footer {
+    gap: 4px;
+    margin-bottom: 12px;
+    padding-block: 8px;
+  }
+}
+
+@media (max-width: 620px) and (max-height: 740px) {
+  .workspace:not(.is-receive) {
+    gap: 10px;
+  }
+
+  .upload-card,
+  .share-card {
+    padding: 10px 14px 12px;
+  }
+
+  .upload-dropzone {
+    min-height: 112px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .upload-illustration,
+  .upload-dropzone p,
+  .password-gate p,
+  .code-note {
+    display: none;
+  }
+
+  .share-card h2 {
+    margin-bottom: 6px;
+  }
+
+  .code-display {
+    margin-bottom: 6px;
+  }
+
+  .code-display span {
+    height: 38px;
+    font-size: 24px;
+  }
+
+  .share-details {
+    display: none;
+  }
+
+  .share-actions {
+    margin-top: 10px;
+  }
+
+  .secondary-action,
+  .primary-action {
+    min-height: 38px;
+  }
+
+  .file-list {
+    max-height: 96px;
+  }
+
+  .upload-progress {
+    margin-top: 10px;
+    padding: 10px 12px;
+  }
+}
