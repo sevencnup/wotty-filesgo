@@ -1280,14 +1280,14 @@
   }
 
   .upload-dropzone {
-    min-height: 112px;
-    padding-top: 6px;
-    padding-bottom: 6px;
+    min-height: 168px;
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
 
   .upload-illustration {
     display: grid;
-    height: 72px;
+    height: 112px;
     margin-bottom: 4px;
   }
 
