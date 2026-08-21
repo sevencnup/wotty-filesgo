@@ -422,7 +422,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="workspace">
+      <section className={`workspace ${currentTab === 'receive' ? 'is-receive' : ''}`}>
         {currentTab === 'send' ? (
           <div className="upload-card panel-card">
             <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFileSelect(e.target.files)} className="visually-hidden" />
@@ -530,7 +530,8 @@ export default function HomePage() {
           </div>
         )}
 
-        <aside className="share-card panel-card">
+        {currentTab === 'send' && (
+          <aside className="share-card panel-card">
           <h2>文件已准备好分享</h2>
           <div className="code-display" onClick={() => primaryResult && copyToClipboard(primaryResult.code, t.codeCopied)} role={primaryResult ? 'button' : undefined} tabIndex={primaryResult ? 0 : undefined}>
             {displayCode.split('').map((digit, index) => <span key={`${digit}-${index}`} className={!primaryResult ? 'is-placeholder' : ''}>{digit}</span>)}
@@ -549,7 +550,8 @@ export default function HomePage() {
           </div>
 
           {primaryResult && <div className="share-link-row"><span>{primaryResult.download_url}</span><button onClick={() => copyToClipboard(primaryResult.download_url, t.linkCopied)}><Copy size={15} /></button></div>}
-        </aside>
+          </aside>
+        )}
       </section>
 
       <footer className="security-footer">

@@ -222,6 +222,10 @@
   margin: 30px auto 28px;
 }
 
+.workspace.is-receive {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .panel-card {
   border: 1px solid rgba(220, 230, 243, 0.92);
   border-radius: 16px;
