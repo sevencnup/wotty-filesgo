@@ -1,0 +1,30 @@
+# VCS / tooling
+.git
+.github
+.claude
+
+# Local env & secrets (never enter the image)
+.env
+*.local
+
+# Root scratch / unused files
+ai-chat-with-settings.tsx
+sha256-test-temp.cjs
+deploy.py
+docker-compose.yml
+docs
+*.md
+*.log
+
+# Node dependencies & build artifacts
+# Windows node_modules must never leak into a Linux build context
+**/node_modules
+**/.next
+**/.next-dev
+**/dist
+**/.cache
+
+# Rust artifacts & server runtime data
+**/target
+server-rust/uploads
+**/*.db
