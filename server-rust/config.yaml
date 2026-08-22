@@ -12,4 +12,4 @@ retention:
 
 # 上传频率限制
 rate_limit:
-  max_uploads_per_day: 2    # 每个IP每天最多上传次数（0表示不限制）
+  max_uploads_per_day: 0    # 每个IP每天最多上传次数（0表示不限制）
