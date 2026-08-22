@@ -28,7 +28,6 @@ interface UploadStatus {
 
 interface UploadOptions {
   file: File
-  password: string
   signal: AbortSignal
   onProgress: (progress: UploadProgress) => void
 }
