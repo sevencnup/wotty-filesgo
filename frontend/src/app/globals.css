@@ -221,7 +221,7 @@
   grid-template-columns: minmax(0, 1.33fr) minmax(390px, 0.99fr);
   gap: 30px;
   width: min(100% - 160px, 1268px);
-  margin: 30px auto 28px;
+  margin: 40px auto 28px;
 }
 
 .workspace.is-receive {
@@ -1006,7 +1006,7 @@
   .workspace {
     gap: 16px;
     width: calc(100% - 24px);
-    margin-top: 16px;
+    margin-top: 24px;
     margin-bottom: 16px;
   }
 
