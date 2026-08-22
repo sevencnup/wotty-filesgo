@@ -127,11 +127,6 @@ pub struct SendMessageRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VerifyPasswordRequest {
-    pub password: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UploadCompleteRequest {
     pub identifier: String,
     pub filename: String,

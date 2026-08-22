@@ -339,7 +339,6 @@ export default function DeviceChatPage() {
     try {
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'X-Upload-Password': 'filesgo123' },
         body: formData
       })
       const data = await res.json()

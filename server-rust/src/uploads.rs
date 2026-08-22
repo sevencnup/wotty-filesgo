@@ -52,18 +52,6 @@ fn now_timestamp() -> i64 {
         .as_secs() as i64
 }
 
-pub(crate) fn is_authorized(req: &HttpRequest) -> bool {
-    req.headers()
-        .get("X-Upload-Password")
-        .and_then(|value| value.to_str().ok())
-        .map(|password| password == AppConfig::get().upload_password)
-        .unwrap_or(false)
-}
-
-fn unauthorized() -> HttpResponse {
-    HttpResponse::Unauthorized().json(serde_json::json!({"error": "上传密码无效"}))
-}
-
 fn normalize_upload_id(value: &str) -> Option<String> {
     Uuid::parse_str(value)
         .ok()
@@ -131,9 +119,6 @@ pub async fn create_upload(
     req: HttpRequest,
     body: web::Json<CreateUploadRequest>,
 ) -> impl Responder {
-    if !is_authorized(&req) {
-        return unauthorized();
-    }
 
     let client_ip = get_client_ip(&req);
     if !crate::handlers::is_upload_allowed(&state.ip_upload_records, &client_ip) {
@@ -198,10 +183,7 @@ pub async fn create_upload(
     HttpResponse::Created().json(status_response(&session))
 }
 
-pub async fn get_upload_status(req: HttpRequest, path: web::Path<String>) -> impl Responder {
-    if !is_authorized(&req) {
-        return unauthorized();
-    }
+pub async fn get_upload_status(_req: HttpRequest, path: web::Path<String>) -> impl Responder {
     let upload_id = match normalize_upload_id(&path) {
         Some(value) => value,
         None => {
@@ -220,9 +202,6 @@ pub async fn upload_chunk(
     path: web::Path<(String, u32)>,
     mut payload: web::Payload,
 ) -> impl Responder {
-    if !is_authorized(&req) {
-        return unauthorized();
-    }
     let (raw_upload_id, index) = path.into_inner();
     let upload_id = match normalize_upload_id(&raw_upload_id) {
         Some(value) => value,
@@ -348,9 +327,6 @@ pub async fn complete_upload(
     req: HttpRequest,
     path: web::Path<String>,
 ) -> impl Responder {
-    if !is_authorized(&req) {
-        return unauthorized();
-    }
     let upload_id = match normalize_upload_id(&path) {
         Some(value) => value,
         None => {
@@ -464,10 +440,7 @@ pub async fn complete_upload(
     }))
 }
 
-pub async fn cancel_upload(req: HttpRequest, path: web::Path<String>) -> impl Responder {
-    if !is_authorized(&req) {
-        return unauthorized();
-    }
+pub async fn cancel_upload(_req: HttpRequest, path: web::Path<String>) -> impl Responder {
     let upload_id = match normalize_upload_id(&path) {
         Some(value) => value,
         None => {

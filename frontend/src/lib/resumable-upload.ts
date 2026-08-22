@@ -47,10 +47,6 @@ class UploadRequestError extends Error {
   }
 }
 
-const authHeaders = (password: string): Record<string, string> => ({
-  'X-Upload-Password': password,
-})
-
 const throwIfAborted = (signal: AbortSignal) => {
   if (signal.aborted) throw new UploadCancelledError()
 }
@@ -171,9 +167,8 @@ const storageRemove = (key: string) => {
   }
 }
 
-const getUploadStatus = async (uploadId: string, password: string, signal: AbortSignal) => {
+const getUploadStatus = async (uploadId: string, signal: AbortSignal) => {
   const response = await fetch(`/api/uploads/${encodeURIComponent(uploadId)}`, {
-    headers: authHeaders(password),
     signal,
   })
   if (response.status === 404) return null
@@ -181,11 +176,10 @@ const getUploadStatus = async (uploadId: string, password: string, signal: Abort
   return response.json() as Promise<UploadStatus>
 }
 
-const createUpload = async (file: File, password: string, signal: AbortSignal) => {
+const createUpload = async (file: File, signal: AbortSignal) => {
   const response = await fetch('/api/uploads', {
     method: 'POST',
     headers: {
-      ...authHeaders(password),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ filename: file.name, size: file.size, chunk_size: CHUNK_SIZE }),
@@ -212,7 +206,6 @@ const putChunk = (
   index: number,
   chunk: Blob,
   hash: string,
-  password: string,
   signal: AbortSignal,
   onProgress: (loaded: number) => void,
 ) => new Promise<void>((resolve, reject) => {
@@ -224,7 +217,6 @@ const putChunk = (
   xhr.open('PUT', `/api/uploads/${encodeURIComponent(status.upload_id)}/chunks/${index}`)
   xhr.timeout = 10 * 60 * 1000
   xhr.setRequestHeader('Content-Type', 'application/octet-stream')
-  xhr.setRequestHeader('X-Upload-Password', password)
   xhr.setRequestHeader('X-Chunk-SHA256', hash)
   xhr.upload.addEventListener('progress', event => {
     if (event.lengthComputable) onProgress(Math.min(event.loaded, chunk.size))
@@ -259,11 +251,10 @@ const putChunk = (
   xhr.send(chunk)
 })
 
-const cancelUpload = async (uploadId: string, password: string) => {
+const cancelUpload = async (uploadId: string) => {
   try {
     await fetch(`/api/uploads/${encodeURIComponent(uploadId)}`, {
       method: 'DELETE',
-      headers: authHeaders(password),
       keepalive: true,
     })
   } catch {
@@ -277,7 +268,7 @@ const connectionConcurrency = () => {
   return 3
 }
 
-export async function uploadFileResumable({ file, password, signal, onProgress }: UploadOptions): Promise<UploadResult> {
+export async function uploadFileResumable({ file, signal, onProgress }: UploadOptions): Promise<UploadResult> {
   throwIfAborted(signal)
   const fingerprint = await fileFingerprint(file)
   const storageKey = SESSION_KEY_PREFIX + fingerprint
@@ -286,14 +277,14 @@ export async function uploadFileResumable({ file, password, signal, onProgress }
 
   try {
     if (uploadId) {
-      status = await getUploadStatus(uploadId, password, signal)
+      status = await getUploadStatus(uploadId, signal)
       if (status && (status.size !== file.size || status.filename !== file.name || status.chunk_size !== CHUNK_SIZE)) {
         status = null
       }
     }
     if (!status) {
       storageRemove(storageKey)
-      status = await createUpload(file, password, signal)
+      status = await createUpload(file, signal)
       uploadId = status.upload_id
       storageSet(storageKey, uploadId)
     }
@@ -342,7 +333,7 @@ export async function uploadFileResumable({ file, password, signal, onProgress }
         let lastError: unknown
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
           try {
-            await putChunk(originalStatus, index, chunk, hash, password, workerController.signal, loaded => {
+            await putChunk(originalStatus, index, chunk, hash, workerController.signal, loaded => {
               const previous = progressByChunk.get(index) || 0
               progressByChunk.set(index, Math.max(previous, loaded))
               emitProgress()
@@ -373,7 +364,6 @@ export async function uploadFileResumable({ file, password, signal, onProgress }
 
     const response = await fetch(`/api/uploads/${encodeURIComponent(status.upload_id)}/complete`, {
       method: 'POST',
-      headers: authHeaders(password),
       signal,
     })
     if (!response.ok) throw await responseError(response, '完成上传失败')
@@ -385,7 +375,7 @@ export async function uploadFileResumable({ file, password, signal, onProgress }
     return result
   } catch (error) {
     if (signal.aborted || error instanceof UploadCancelledError) {
-      if (uploadId) await cancelUpload(uploadId, password)
+      if (uploadId) await cancelUpload(uploadId)
       storageRemove(storageKey)
       throw new UploadCancelledError()
     }

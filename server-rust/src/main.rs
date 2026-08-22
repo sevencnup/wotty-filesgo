@@ -68,10 +68,10 @@ async fn main() -> std::io::Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let config = AppConfig::load();
-    log::info!("Configuration loaded, upload password configured, daily upload limit: {} times", 
+    log::info!("Configuration loaded, daily upload limit: {} times",
         config.rate_limit.max_uploads_per_day);
 
-    let db = init_db("filesgo.db").expect("Failed to initialize database");
+    let db = init_db("FilesGO.db").expect("Failed to initialize database");
     log::info!("Database initialized");
 
     let hub = websocket::HubActor::new().start();
@@ -114,7 +114,6 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::default())
             .service(
                 web::scope("/api")
-                    .route("/verify-password", web::post().to(handlers::verify_password))
                     .route("/upload", web::post().to(handlers::upload_file))
                     .route("/uploads", web::post().to(uploads::create_upload))
                     .route("/uploads/{upload_id}", web::get().to(uploads::get_upload_status))

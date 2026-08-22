@@ -342,72 +342,6 @@
   border: 0;
 }
 
-.password-gate {
-  position: absolute;
-  z-index: 2;
-  top: 12px;
-  right: 20px;
-  left: 20px;
-  padding: 10px 13px 9px;
-  border: 1px solid #e3ebf5;
-  border-radius: 11px;
-  background: rgba(248, 251, 255, 0.96);
-}
-
-.password-gate-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-  color: #6d7c94;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.password-gate-controls {
-  display: flex;
-  gap: 8px;
-}
-
-.password-gate input {
-  min-width: 0;
-  flex: 1;
-  padding: 7px 10px;
-  border: 1px solid #dbe5f1;
-  border-radius: 7px;
-  outline: none;
-  color: #26334d;
-  background: #fff;
-  font-size: 13px;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.password-gate input:focus {
-  border-color: #4b9df2;
-  box-shadow: 0 0 0 3px rgba(50, 143, 238, 0.1);
-}
-
-.password-gate button {
-  padding: 0 14px;
-  color: #1976e9;
-  border-radius: 7px;
-  background: #e8f3ff;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.password-gate button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.password-gate p {
-  margin: 5px 0 0;
-  color: #9aa8ba;
-  font-size: 11px;
-}
-
 .file-list,
 .result-list,
 .upload-progress {
@@ -1094,14 +1028,6 @@
     font-size: 24px;
   }
 
-  .password-gate {
-    position: relative;
-    top: auto;
-    right: auto;
-    left: auto;
-    margin-bottom: 10px;
-  }
-
   .upload-dropzone h2,
   .receive-hero h2 {
     font-size: 17px;
@@ -1293,7 +1219,6 @@
   }
 
   .upload-dropzone p,
-  .password-gate p,
   .code-note {
     display: block;
   }
@@ -1310,7 +1235,6 @@
     margin: 4px 0 4px;
   }
 
-  .password-gate p,
   .code-note {
     display: none;
   }

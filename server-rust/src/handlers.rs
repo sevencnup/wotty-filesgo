@@ -62,27 +62,12 @@ fn is_same_day(t1: i64, t2: i64) -> bool {
     dt1.year() == dt2.year() && dt1.month() == dt2.month() && dt1.day() == dt2.day()
 }
 
-pub async fn verify_password(
-    _state: web::Data<AppState>,
-    body: web::Json<VerifyPasswordRequest>,
-) -> impl Responder {
-    let config = AppConfig::get();
-    if body.password == config.upload_password {
-        HttpResponse::Ok().json(serde_json::json!({"valid": true}))
-    } else {
-        HttpResponse::Unauthorized().json(serde_json::json!({"valid": false, "error": "密码错误"}))
-    }
-}
-
 pub async fn upload_file(
     state: web::Data<AppState>,
     req: HttpRequest,
     mut payload: Multipart,
 ) -> impl Responder {
     let config = AppConfig::get();
-    if !crate::uploads::is_authorized(&req) {
-        return HttpResponse::Unauthorized().json(serde_json::json!({"error": "上传密码无效"}));
-    }
     let client_ip = get_client_ip(&req);
     if !is_upload_allowed(&state.ip_upload_records, &client_ip) {
         return HttpResponse::TooManyRequests().json(serde_json::json!({"error": "今日上传次数已达上限"}));

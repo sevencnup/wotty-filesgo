@@ -6,7 +6,6 @@ static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
-    pub upload_password: String,
     pub server: ServerConfig,
     pub retention: RetentionConfig,
     pub rate_limit: RateLimitConfig,
@@ -32,7 +31,6 @@ pub struct RateLimitConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            upload_password: "filesgo123".to_string(),
             server: ServerConfig { port: 3003 },
             retention: RetentionConfig {
                 initial_hours: 24,

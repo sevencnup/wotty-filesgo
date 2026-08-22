@@ -1,6 +1,4 @@
-# FilesGo 配置文件
-# 上传密码：防止服务器被滥用上传
-upload_password: "filesgo.."
+# FilesGO 配置文件
 
 # 服务器配置
 server:

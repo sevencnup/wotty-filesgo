@@ -32,17 +32,6 @@ pub fn generate_file_code() -> String {
     code
 }
 
-pub fn hash_password(password: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(password.as_bytes());
-    let result = hasher.finalize();
-    hex::encode(result)
-}
-
-pub fn verify_password_hash(password: &str, hash: &str) -> bool {
-    hash_password(password) == hash
-}
-
 pub fn generate_token(device_id: &str) -> String {
     let bytes: [u8; 32] = rand::thread_rng().gen();
     format!("{}:{}", device_id, hex::encode(bytes))

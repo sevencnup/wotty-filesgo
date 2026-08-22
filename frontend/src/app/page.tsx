@@ -11,7 +11,6 @@ import {
   FileText,
   HelpCircle,
   Link2,
-  LockKeyhole,
   Plus,
   Send,
   ShieldCheck,
@@ -50,16 +49,14 @@ const translations = {
     fileNotFound: '文件不存在或已过期',
     networkError: '网络错误',
     validPeriod: '有效期',
-    validPeriodValue: '7 天后过期',
+    validPeriodValue: '2小时候自动删除',
     codeProtection: '取件码保护',
     codeProtectionValue: '仅凭取件码可提取',
     downloadLimit: '下载次数限制',
-    downloadLimitValue: '不限次数',
+    downloadLimitValue: '2小时内不限次数下载',
     securityTip: '文件采用加密存储，保障您的数据安全',
     securityMore: '了解更多安全说明',
     help: '帮助中心',
-    passwordError: '密码错误，请重新输入',
-    passwordVerifyFailed: '密码验证失败',
     codeCopied: '取件码已复制',
     linkCopied: '链接已复制',
     copyFailed: '复制失败，请手动复制',
@@ -86,9 +83,6 @@ type UploadResult = {
 
 export default function HomePage() {
   const [currentTab, setCurrentTab] = useState<'send' | 'receive'>('send')
-  const [uploadPassword, setUploadPassword] = useState('')
-  const [isPasswordVerified, setIsPasswordVerified] = useState(false)
-  const [isVerifying, setIsVerifying] = useState(false)
   const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([])
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -136,36 +130,8 @@ export default function HomePage() {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   }
 
-  const verifyPassword = async () => {
-    if (!uploadPassword.trim()) return
-    setIsVerifying(true)
-    try {
-      const res = await fetch('/api/verify-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: uploadPassword.trim() }),
-      })
-      const data = await res.json()
-
-      if (data.valid) {
-        setIsPasswordVerified(true)
-        showToast('密码验证成功', 'success')
-      } else {
-        showToast(t.passwordError, 'error')
-        setUploadPassword('')
-      }
-    } catch {
-      showToast(t.passwordVerifyFailed, 'error')
-    }
-    setIsVerifying(false)
-  }
-
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return
-    if (!isPasswordVerified) {
-      showToast(t.passwordRequired, 'error')
-      return
-    }
 
     const maxSize = 10 * 1024 * 1024 * 1024
     const newFiles: UploadItem[] = []
@@ -201,7 +167,6 @@ export default function HomePage() {
     try {
       return await uploadFileResumable({
         file,
-        password: uploadPassword,
         signal: controller.signal,
         onProgress: ({ percent, bytesPerSecond, etaSeconds }) => {
           setProgress(percent)
@@ -247,7 +212,7 @@ export default function HomePage() {
 
     setIsUploading(false)
     setCurrentUpload(null)
-  }, [isUploading, uploadQueue, uploadPassword, showToast])
+  }, [isUploading, uploadQueue, showToast])
 
   useEffect(() => {
     if (uploadQueue.some((item) => item.status === 'waiting') && !isUploading) processQueue()
@@ -426,24 +391,6 @@ export default function HomePage() {
           <div className="upload-card panel-card">
             <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFileSelect(e.target.files)} className="visually-hidden" />
 
-            {!isPasswordVerified && (
-              <div className="password-gate">
-                <div className="password-gate-title"><LockKeyhole size={16} /> {t.passwordLabel}</div>
-                <div className="password-gate-controls">
-                  <input
-                    type="password"
-                    value={uploadPassword}
-                    onChange={(e) => setUploadPassword(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !isVerifying) verifyPassword() }}
-                    placeholder={t.passwordPlaceholder}
-                    disabled={isVerifying}
-                  />
-                  <button onClick={verifyPassword} disabled={isVerifying || !uploadPassword.trim()}>{isVerifying ? '验证中' : t.verify}</button>
-                </div>
-                <p>{t.passwordHint}</p>
-              </div>
-            )}
-
             <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()} onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileSelect(e.dataTransfer.files) }}>
               <div className="upload-illustration"><Image src="/download.png" alt="上传文件" width={320} height={160} className="upload-image" /></div>
               <h2>{t.dropzoneText}</h2>
@@ -475,7 +422,7 @@ export default function HomePage() {
               </div>
             )}
 
-            {!currentUpload && isPasswordVerified && (
+            {!currentUpload && (
               <button className="add-files-button" onClick={() => fileInputRef.current?.click()}><Plus size={18} /> {t.addMore}</button>
             )}
             {uploadResults.length > 0 && <button className="continue-button" onClick={resetUpload}>{t.continueSend}<ChevronRight size={17} /></button>}
