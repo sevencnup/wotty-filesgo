@@ -46,7 +46,9 @@
 
 .flash-page {
   position: relative;
+  display: flex;
   min-height: 100vh;
+  flex-direction: column;
   overflow: hidden;
   color: #17213a;
   background:
@@ -871,7 +873,7 @@
   align-items: center;
   justify-content: space-between;
   width: min(100% - 160px, 1268px);
-  margin: 0 auto 22px;
+  margin: auto auto 22px;
   padding: 0;
   color: #3888e6;
   font-size: 13px;
