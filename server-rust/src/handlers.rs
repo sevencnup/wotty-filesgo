@@ -19,6 +19,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::io::AsyncReadExt;
 
 pub type FileRecords = Arc<RwLock<HashMap<String, InMemoryFileRecord>>>;
 pub type IpUploadRecords = Arc<RwLock<HashMap<String, IpUploadRecord>>>;
@@ -396,6 +397,92 @@ pub async fn download_file(
         _ => return Ok(HttpResponse::NotFound().json(serde_json::json!({"error": "文件不存在或已过期"}))),
     };
     database::update_file_first_download(&state.db, &code).ok();
+
+    // 探测文件头：命中 FGO1 则流式解密，否则视为旧明文文件直传
+    let mut probe = match tokio::fs::File::open(&file_path).await {
+        Ok(value) => value,
+        Err(_) => {
+            return Ok(HttpResponse::InternalServerError()
+                .json(serde_json::json!({"error": "文件打开失败"})));
+        }
+    };
+    let mut head = vec![0u8; crypto::FILE_HEADER_LEN];
+    let read_n = probe.read(&mut head).await.unwrap_or(0);
+    let parsed = if read_n >= crypto::FILE_HEADER_LEN {
+        crypto::parse_header(&head).ok().flatten()
+    } else {
+        None
+    };
+
+    if let Some(header) = parsed {
+        let (tx, rx) = tokio::sync::mpsc::channel::<std::io::Result<bytes::Bytes>>(8);
+        let read_path = file_path.clone();
+        let segment_size = header.segment_size as usize;
+        let full_segments = header.total_size / header.segment_size as u64;
+        let remainder = (header.total_size % header.segment_size as u64) as usize;
+        let dek = header.dek;
+        let base_nonce = header.base_nonce;
+        tokio::task::spawn_blocking(move || {
+            use std::io::Read;
+            let mut file = match fs::File::open(&read_path) {
+                Ok(value) => value,
+                Err(error) => {
+                    let _ = tx.blocking_send(Err(std::io::Error::other(format!("打开文件失败: {error}"))));
+                    return;
+                }
+            };
+            let mut skip = vec![0u8; crypto::FILE_HEADER_LEN];
+            if file.read_exact(&mut skip).is_err() {
+                let _ = tx.blocking_send(Err(std::io::Error::other("文件头读取失败")));
+                return;
+            }
+            for index in 0..full_segments {
+                let mut ciphertext = vec![0u8; segment_size + 16];
+                if file.read_exact(&mut ciphertext).is_err() {
+                    let _ = tx.blocking_send(Err(std::io::Error::other("密文分片读取失败")));
+                    return;
+                }
+                match crypto::decrypt_segment(&dek, &base_nonce, index as u32, &ciphertext) {
+                    Ok(plaintext) => {
+                        if tx.blocking_send(Ok(bytes::Bytes::from(plaintext))).is_err() {
+                            return;
+                        }
+                    }
+                    Err(message) => {
+                        let _ = tx.blocking_send(Err(std::io::Error::other(message)));
+                        return;
+                    }
+                }
+            }
+            if remainder > 0 {
+                let mut ciphertext = vec![0u8; remainder + 16];
+                if file.read_exact(&mut ciphertext).is_err() {
+                    let _ = tx.blocking_send(Err(std::io::Error::other("文件尾部密文读取失败")));
+                    return;
+                }
+                match crypto::decrypt_segment(&dek, &base_nonce, full_segments as u32, &ciphertext) {
+                    Ok(plaintext) => {
+                        if tx.blocking_send(Ok(bytes::Bytes::from(plaintext))).is_err() {
+                            return;
+                        }
+                    }
+                    Err(message) => {
+                        let _ = tx.blocking_send(Err(std::io::Error::other(message)));
+                        return;
+                    }
+                }
+            }
+        });
+        let stream = tokio_stream::wrappers::ReceiverStream::new(rx);
+        return Ok(HttpResponse::Ok()
+            .content_type(mime::APPLICATION_OCTET_STREAM)
+            .insert_header(ContentDisposition {
+                disposition: DispositionType::Attachment,
+                parameters: vec![DispositionParam::Filename(filename)],
+            })
+            .insert_header(actix_web::http::header::ContentLength(header.total_size as usize))
+            .streaming(stream));
+    }
 
     let file = match NamedFile::open_async(file_path).await {
         Ok(value) => value,

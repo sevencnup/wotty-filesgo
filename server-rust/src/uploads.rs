@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
-use tokio::io::{AsyncWriteExt, BufReader, BufWriter};
+use tokio::io::{AsyncWriteExt, BufWriter};
 use uuid::Uuid;
 
 pub const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024 * 1024;
@@ -345,6 +345,21 @@ pub async fn complete_upload(
     let upload_root = PathBuf::from("uploads");
     let assembling_path = upload_root.join(format!(".{}.assembling", upload_id));
     let final_path = upload_root.join(format!("{}.file", upload_id));
+
+    // 落盘加密：每个上传分片作为一个 AES-GCM 分片，只写密文，不落明文
+    let segment_size = match u32::try_from(session.chunk_size) {
+        Ok(value) => value,
+        Err(_) => {
+            return HttpResponse::InternalServerError()
+                .json(serde_json::json!({"error": "分片大小不合法"}));
+        }
+    };
+    let dek: [u8; 32] = rand::random();
+    let base_nonce: [u8; 12] = rand::random();
+    let (wrap_nonce, wrapped_dek) = crypto::wrap_dek(&dek);
+    let header =
+        crypto::header_bytes(segment_size, session.size, &base_nonce, &wrap_nonce, &wrapped_dek);
+
     let output = match tokio::fs::File::create(&assembling_path).await {
         Ok(value) => value,
         Err(_) => {
@@ -353,9 +368,15 @@ pub async fn complete_upload(
         }
     };
     let mut writer = BufWriter::new(output);
+    if writer.write_all(&header).await.is_err() {
+        drop(writer);
+        tokio::fs::remove_file(&assembling_path).await.ok();
+        return HttpResponse::InternalServerError()
+            .json(serde_json::json!({"error": "写入文件头失败"}));
+    }
     let mut total_size = 0_u64;
     for index in 0..session.total_chunks {
-        let input = match tokio::fs::File::open(chunk_path(&upload_id, index)).await {
+        let chunk = match tokio::fs::read(chunk_path(&upload_id, index)).await {
             Ok(value) => value,
             Err(_) => {
                 drop(writer);
@@ -364,15 +385,21 @@ pub async fn complete_upload(
                     .json(serde_json::json!({"error": "分片缺失，请续传后重试"}));
             }
         };
-        let mut reader = BufReader::new(input);
-        match tokio::io::copy(&mut reader, &mut writer).await {
-            Ok(copied) => total_size += copied,
+        total_size += chunk.len() as u64;
+        let ciphertext = match crypto::encrypt_segment(&dek, &base_nonce, index, &chunk) {
+            Ok(value) => value,
             Err(_) => {
                 drop(writer);
                 tokio::fs::remove_file(&assembling_path).await.ok();
                 return HttpResponse::InternalServerError()
-                    .json(serde_json::json!({"error": "合并文件失败"}));
+                    .json(serde_json::json!({"error": "加密文件失败"}));
             }
+        };
+        if writer.write_all(&ciphertext).await.is_err() {
+            drop(writer);
+            tokio::fs::remove_file(&assembling_path).await.ok();
+            return HttpResponse::InternalServerError()
+                .json(serde_json::json!({"error": "写入加密分片失败"}));
         }
     }
     if writer.flush().await.is_err() || total_size != session.size {

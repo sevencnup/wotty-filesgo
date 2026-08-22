@@ -89,6 +89,8 @@ async fn main() -> std::io::Result<()> {
 
     fs::create_dir_all("uploads").ok();
 
+    crypto::ensure_master_key().expect("初始化主密钥失败");
+
     let app_state = web::Data::new(AppState {
         db,
         hub: hub.clone(),

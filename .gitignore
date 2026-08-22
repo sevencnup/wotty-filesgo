@@ -6,3 +6,5 @@ dist
 *.db
 *.log
 .env
+uploads/
+server-rust/uploads/
