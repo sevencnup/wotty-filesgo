@@ -87,6 +87,8 @@ export default function HomePage() {
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [currentUpload, setCurrentUpload] = useState<{ filename: string; size: number } | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const dragDepthRef = useRef(0)
   const [progress, setProgress] = useState(0)
   const [uploadSpeedBps, setUploadSpeedBps] = useState<number | null>(null)
   const [uploadEtaSec, setUploadEtaSec] = useState<number | null>(null)
@@ -217,6 +219,19 @@ export default function HomePage() {
   useEffect(() => {
     if (uploadQueue.some((item) => item.status === 'waiting') && !isUploading) processQueue()
   }, [uploadQueue, isUploading, processQueue])
+
+  useEffect(() => {
+    const prevent = (e: DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    window.addEventListener('dragover', prevent)
+    window.addEventListener('drop', prevent)
+    return () => {
+      window.removeEventListener('dragover', prevent)
+      window.removeEventListener('drop', prevent)
+    }
+  }, [])
 
   const handleDownload = async (code: string) => {
     const normalized = code.trim().toUpperCase()
@@ -388,10 +403,10 @@ export default function HomePage() {
 
       <section className={`workspace ${currentTab === 'receive' ? 'is-receive' : ''}`}>
         {currentTab === 'send' ? (
-          <div className="upload-card panel-card">
+          <div className={`upload-card panel-card${dragActive ? ' is-dragging' : ''}`} onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); dragDepthRef.current++; setDragActive(true) }} onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }} onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); dragDepthRef.current = Math.max(0, dragDepthRef.current - 1); if (dragDepthRef.current === 0) setDragActive(false) }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); dragDepthRef.current = 0; setDragActive(false); handleFileSelect(e.dataTransfer.files) }}>
             <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFileSelect(e.target.files)} className="visually-hidden" />
 
-            <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()} onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileSelect(e.dataTransfer.files) }}>
+            <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()}>
               <div className="upload-illustration"><Image src="/download.png" alt="上传文件" width={320} height={160} className="upload-image" /></div>
               <h2>{t.dropzoneText}</h2>
               <p>{t.dropzoneHint}</p>
