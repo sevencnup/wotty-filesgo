@@ -619,6 +619,22 @@
   font-weight: 700;
 }
 
+.share-upload-progress {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.share-upload-progress h2 {
+  margin-bottom: 20px;
+}
+
+.share-upload-progress .upload-progress {
+  width: 100%;
+  margin-top: 0;
+}
+
 .code-display {
   display: flex;
   justify-content: center;
@@ -1201,6 +1217,14 @@
     margin-bottom: 12px;
   }
 
+  .share-upload-progress h2 {
+    margin-bottom: 12px;
+  }
+
+  .share-upload-progress .upload-progress {
+    padding: 12px 13px;
+  }
+
   .code-display {
     margin-bottom: 9px;
   }
@@ -1293,6 +1317,14 @@
 
   .share-card h2 {
     margin-bottom: 6px;
+  }
+
+  .share-upload-progress h2 {
+    margin-bottom: 8px;
+  }
+
+  .share-upload-progress .upload-progress {
+    padding: 10px 12px;
   }
 
   .code-display {

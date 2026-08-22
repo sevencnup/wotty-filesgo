@@ -450,15 +450,6 @@ export default function HomePage() {
               <p>{t.dropzoneHint}</p>
             </div>
 
-            {currentUpload && (
-              <div className="upload-progress">
-                <div className="upload-progress-heading"><span>{t.uploading}</span><strong>{Math.round(progress)}%</strong></div>
-                <p>{currentUpload.filename} · {formatSize(currentUpload.size)}</p>
-                <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>
-                <small>{formatSpeed(uploadSpeedBps)} · 剩余 {formatEta(uploadEtaSec)}</small>
-              </div>
-            )}
-
             {uploadQueue.length > 0 && (
               <div className="file-list">
                 {uploadQueue.map((item, index) => (
@@ -524,24 +515,38 @@ export default function HomePage() {
 
         {currentTab === 'send' && (
           <aside className="share-card panel-card">
-          <h2>文件已准备好分享</h2>
-          <div className="code-display" onClick={() => primaryResult && copyToClipboard(primaryResult.code, t.codeCopied)} role={primaryResult ? 'button' : undefined} tabIndex={primaryResult ? 0 : undefined}>
-            {displayCode.split('').map((digit, index) => <span key={`${digit}-${index}`} className={!primaryResult ? 'is-placeholder' : ''}>{digit}</span>)}
-          </div>
-          <div className="code-note"><CheckCircle2 size={17} /> {primaryResult ? t.clickToCopy : '上传完成后将在这里生成取件码'}</div>
+          {isUploading && currentUpload ? (
+            <div className="share-upload-progress">
+              <h2>{t.uploading}</h2>
+              <div className="upload-progress">
+                <div className="upload-progress-heading"><span>{t.uploading}</span><strong>{Math.round(progress)}%</strong></div>
+                <p>{currentUpload.filename} · {formatSize(currentUpload.size)}</p>
+                <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>
+                <small>{formatSpeed(uploadSpeedBps)} · 剩余 {formatEta(uploadEtaSec)}</small>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2>文件已准备好分享</h2>
+              <div className="code-display" onClick={() => primaryResult && copyToClipboard(primaryResult.code, t.codeCopied)} role={primaryResult ? 'button' : undefined} tabIndex={primaryResult ? 0 : undefined}>
+                {displayCode.split('').map((digit, index) => <span key={`${digit}-${index}`} className={!primaryResult ? 'is-placeholder' : ''}>{digit}</span>)}
+              </div>
+              <div className="code-note"><CheckCircle2 size={17} /> {primaryResult ? t.clickToCopy : '上传完成后将在这里生成取件码'}</div>
 
-          <div className="share-details">
-            <div className="detail-row"><Clock3 size={19} /><strong>{t.validPeriod}</strong><span>{t.validPeriodValue}</span></div>
-            <div className="detail-row"><ShieldCheck size={19} /><strong>{t.codeProtection}</strong><span>{t.codeProtectionValue}</span></div>
-            <div className="detail-row"><Download size={19} /><strong>{t.downloadLimit}</strong><span>{t.downloadLimitValue}</span></div>
-          </div>
+              <div className="share-details">
+                <div className="detail-row"><Clock3 size={19} /><strong>{t.validPeriod}</strong><span>{t.validPeriodValue}</span></div>
+                <div className="detail-row"><ShieldCheck size={19} /><strong>{t.codeProtection}</strong><span>{t.codeProtectionValue}</span></div>
+                <div className="detail-row"><Download size={19} /><strong>{t.downloadLimit}</strong><span>{t.downloadLimitValue}</span></div>
+              </div>
 
-          <div className="share-actions">
-            <button className="secondary-action" disabled={!primaryResult} onClick={() => primaryResult && copyToClipboard(primaryResult.code, t.codeCopied)}><Copy size={18} /> {t.copyCode}</button>
-            <button className="primary-action" disabled={!primaryResult} onClick={() => primaryResult && copyToClipboard(primaryResult.download_url, t.linkCopied)}><Link2 size={18} /> {t.shareCode}</button>
-          </div>
+              <div className="share-actions">
+                <button className="secondary-action" disabled={!primaryResult} onClick={() => primaryResult && copyToClipboard(primaryResult.code, t.codeCopied)}><Copy size={18} /> {t.copyCode}</button>
+                <button className="primary-action" disabled={!primaryResult} onClick={() => primaryResult && copyToClipboard(primaryResult.download_url, t.linkCopied)}><Link2 size={18} /> {t.shareCode}</button>
+              </div>
 
-          {primaryResult && <div className="share-link-row"><span>{primaryResult.download_url}</span><button onClick={() => copyToClipboard(primaryResult.download_url, t.linkCopied)}><Copy size={15} /></button></div>}
+              {primaryResult && <div className="share-link-row"><span>{primaryResult.download_url}</span><button onClick={() => copyToClipboard(primaryResult.download_url, t.linkCopied)}><Copy size={15} /></button></div>}
+            </>
+          )}
           </aside>
         )}
       </section>
