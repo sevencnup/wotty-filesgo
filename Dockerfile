@@ -22,8 +22,8 @@ RUN cargo build --release --locked
 FROM debian:bookworm-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y libsqlite3-0 ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/target/release/filesgo-server /app/filesgo-server
+COPY --from=builder /app/target/release/FilesGO-server /app/FilesGO-server
 COPY --from=builder /app/config.yaml ./
 COPY --from=builder /app/dist ./dist
 EXPOSE 3003
-CMD ["./filesgo-server"]
+CMD ["./FilesGO-server"]
