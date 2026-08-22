@@ -487,6 +487,28 @@ export default function HomePage() {
                 <small>{formatSpeed(uploadSpeedBps)} · 剩余 {formatEta(uploadEtaSec)}</small>
               </div>
             </div>
+          ) : uploadResults.length > 1 ? (
+            <>
+              <h2>文件已准备好分享</h2>
+              <div className="code-note"><CheckCircle2 size={17} /> 共 {uploadResults.length} 个取件码，每个文件对应一个</div>
+
+              <div className="share-code-list">
+                {uploadResults.map((result, index) => (
+                  <div className="result-inline" key={`${result.code}-${index}`}>
+                    <CheckCircle2 size={19} />
+                    <span title={result.filename}>{result.filename}</span>
+                    <button onClick={() => copyToClipboard(result.code, t.codeCopied)}>{result.code}</button>
+                    <button className="link-btn" onClick={() => copyToClipboard(result.download_url, t.linkCopied)} aria-label="复制分享链接"><Link2 size={15} /></button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="share-details">
+                <div className="detail-row"><Clock3 size={19} /><strong>{t.validPeriod}</strong><span>{t.validPeriodValue}</span></div>
+                <div className="detail-row"><ShieldCheck size={19} /><strong>{t.codeProtection}</strong><span>{t.codeProtectionValue}</span></div>
+                <div className="detail-row"><Download size={19} /><strong>{t.downloadLimit}</strong><span>{t.downloadLimitValue}</span></div>
+              </div>
+            </>
           ) : (
             <>
               <h2>文件已准备好分享</h2>

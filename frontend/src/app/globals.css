@@ -521,6 +521,32 @@
   letter-spacing: 0.12em;
 }
 
+.share-code-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 13px;
+}
+
+.share-code-list .result-inline {
+  background: #fbfdff;
+}
+
+.share-code-list .link-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 7px;
+  color: #7a8aa0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  border-radius: 6px;
+  background: #eef1f6;
+  cursor: pointer;
+}
+
 .add-files-button,
 .continue-button {
   position: relative;
