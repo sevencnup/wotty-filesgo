@@ -221,7 +221,8 @@
   grid-template-columns: minmax(0, 1.33fr) minmax(390px, 0.99fr);
   gap: 30px;
   width: min(100% - 160px, 1268px);
-  margin: 40px auto 28px;
+  margin: 56px auto 28px;
+  transform: translateY(24px);
 }
 
 .workspace.is-receive {
@@ -896,6 +897,111 @@
   color: #115db6;
 }
 
+.security-details-backdrop {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(22, 36, 59, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.security-details-panel {
+  width: min(100%, 560px);
+  overflow: hidden;
+  border: 1px solid rgba(214, 228, 244, 0.96);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 22px 64px rgba(29, 61, 104, 0.23);
+}
+
+.security-details-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 25px 28px 19px;
+  border-bottom: 1px solid #e7eff8;
+}
+
+.security-details-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #287fe3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.security-details-header h2 {
+  margin: 7px 0 0;
+  color: #202b44;
+  font-size: 21px;
+  line-height: 1.3;
+}
+
+.security-details-close {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: -4px -7px 0 0;
+  padding: 0;
+  color: #718198;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.security-details-close:hover {
+  color: #2a83ed;
+  background: #edf6ff;
+}
+
+.security-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 20px 28px 26px;
+  color: #65738a;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.security-details-content p {
+  margin: 0;
+}
+
+.security-details-content strong {
+  color: #33425c;
+}
+
+.security-details-item {
+  display: grid;
+  gap: 2px;
+  padding: 11px 14px;
+  border-radius: 9px;
+  background: #f6faff;
+}
+
+.security-details-item strong {
+  font-size: 13px;
+}
+
+.security-details-item span {
+  color: #718198;
+  font-size: 13px;
+}
+
+.security-details-note {
+  padding-top: 2px;
+  color: #8a97a9;
+  font-size: 12px;
+}
+
 .flash-toast {
   position: fixed;
   z-index: 20;
@@ -1134,6 +1240,28 @@
 
   .security-footer button {
     font-size: 11px;
+  }
+
+  .security-details-backdrop {
+    padding: 16px;
+  }
+
+  .security-details-header {
+    padding: 20px 20px 16px;
+  }
+
+  .security-details-header h2 {
+    font-size: 19px;
+  }
+
+  .security-details-content {
+    gap: 11px;
+    padding: 16px 20px 20px;
+    font-size: 13px;
+  }
+
+  .security-details-item {
+    padding: 10px 12px;
   }
 }
 

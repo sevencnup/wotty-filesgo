@@ -6,7 +6,7 @@ import { PageTransition } from '@/components/page-transition'
 const manrope = Manrope({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '闪传 - 安全、高效、便捷的文件传输',
+  title: 'wotty FilesGO - 安全、高效、便捷的文件传输',
   description: '安全、高效、便捷的文件传输服务',
 }
 

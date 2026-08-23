@@ -95,7 +95,7 @@ export default function DeviceChatPage() {
   }
 
   useEffect(() => {
-    const savedDevice = localStorage.getItem('filesgo_device')
+    const savedDevice = localStorage.getItem('wotty-filesgo_device')
     if (savedDevice) {
       const device = JSON.parse(savedDevice)
       setCurrentDevice(device)
@@ -123,7 +123,7 @@ export default function DeviceChatPage() {
         name: `Device-${data.device_id.slice(0, 4)}`,
         token: data.token
       }
-      localStorage.setItem('filesgo_device', JSON.stringify(device))
+      localStorage.setItem('wotty-filesgo_device', JSON.stringify(device))
       setCurrentDevice(device)
       connectWebSocket(device)
     } catch (e) {
@@ -392,7 +392,7 @@ export default function DeviceChatPage() {
   const messages = deviceMessages[selectedDeviceId || ''] || []
 
   return (
-    <div className={`filesgo-theme h-screen overflow-hidden ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+    <div className={`wotty-filesgo-theme h-screen overflow-hidden ${isDarkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       <div className="flex h-screen">
         <div className="w-72 bg-white/90 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
           <div className="theme-panel p-4 border-b border-gray-200 dark:border-gray-700">

@@ -12,16 +12,14 @@ import {
   HelpCircle,
   Link2,
   Plus,
-  Send,
   ShieldCheck,
-  UserCircle,
   X,
 } from 'lucide-react'
 import { uploadFileResumable, UploadCancelledError } from '@/lib/resumable-upload'
 
 const translations = {
   zh: {
-    title: '闪传',
+    title: 'wotty FilesGO',
     subtitle: '安全 · 高效 · 便捷',
     sendTab: '发送文件',
     receiveTab: '接收文件',
@@ -55,7 +53,7 @@ const translations = {
     downloadLimit: '下载次数限制',
     downloadLimitValue: '2小时内不限次数下载',
     securityTip: '文件采用加密存储，保障您的数据安全',
-    securityMore: '了解更多安全说明',
+    securityMore: '查看文件加密说明',
     help: '帮助中心',
     codeCopied: '取件码已复制',
     linkCopied: '链接已复制',
@@ -96,6 +94,7 @@ export default function HomePage() {
   const [receiveCodeSlots, setReceiveCodeSlots] = useState<string[]>(() => Array(6).fill(''))
   const [receiveStatus, setReceiveStatus] = useState({ text: '', type: '' })
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isSecurityDetailsOpen, setIsSecurityDetailsOpen] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -382,11 +381,11 @@ export default function HomePage() {
 
           <nav className="main-nav" aria-label="主导航">
             <button className={`nav-item ${currentTab === 'send' ? 'is-active' : ''}`} onClick={() => setCurrentTab('send')}>
-              <Send size={19} strokeWidth={2.3} />
+              <Image src="/1.png" alt="发送文件" width={19} height={19} className="nav-tab-icon" />
               {t.sendTab}
             </button>
             <button className={`nav-item ${currentTab === 'receive' ? 'is-active' : ''}`} onClick={() => setCurrentTab('receive')}>
-              <Download size={19} strokeWidth={2.3} />
+              <Image src="/2.png" alt="接收文件" width={19} height={19} className="nav-tab-icon" />
               {t.receiveTab}
             </button>
           </nav>
@@ -469,7 +468,7 @@ export default function HomePage() {
               <button className="download-button" onClick={() => handleDownload(receiveCode)} disabled={isDownloading}>
                 <Download size={19} /> {isDownloading ? t.finding : '提取文件'}
               </button>
-              <div className="receive-case-hint">取件码区分大小写</div>
+              <div className="receive-case-hint">取件码不区分大小写</div>
               <div className={`receive-status ${receiveStatus.type === 'error' ? 'is-error' : receiveStatus.type === 'success' ? 'is-success' : ''}`}>{receiveStatus.text}</div>
             </div>
           </div>
@@ -537,9 +536,53 @@ export default function HomePage() {
 
       <footer className="security-footer">
         <div><ShieldCheck size={19} /><span>{t.securityTip}</span></div>
-        <span className="footer-copyright">© 2026 星七七 FilesGO 文件传输 · 2H Auto-Destruct</span>
-        <button onClick={() => showToast('文件将在有效期后自动清理', 'info')}>{t.securityMore} <ChevronRight size={17} /></button>
+        <span className="footer-copyright">© 2026 星七七 wotty FilesGO 文件传输 · 2H Auto-Destruct</span>
+        <button
+          type="button"
+          aria-expanded={isSecurityDetailsOpen}
+          aria-controls="security-details"
+          onClick={() => setIsSecurityDetailsOpen((open) => !open)}
+        >
+          {t.securityMore} <ChevronRight size={17} />
+        </button>
       </footer>
+
+      {isSecurityDetailsOpen && (
+        <div className="security-details-backdrop" role="presentation" onClick={() => setIsSecurityDetailsOpen(false)}>
+          <section
+            id="security-details"
+            className="security-details-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="security-details-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="security-details-header">
+              <div>
+                <div className="security-details-kicker"><ShieldCheck size={16} /> 文件落盘加密</div>
+                <h2 id="security-details-title">文件如何受到加密保护</h2>
+              </div>
+              <button type="button" className="security-details-close" onClick={() => setIsSecurityDetailsOpen(false)} aria-label="关闭加密说明"><X size={20} /></button>
+            </div>
+            <div className="security-details-content">
+              <p>文件上传完成后，服务端会在写入存储前使用 <strong>AES-256-GCM</strong> 加密；磁盘上保存的是密文，而不是原始文件内容。</p>
+              <div className="security-details-item">
+                <strong>每个文件独立加密</strong>
+                <span>系统会为每个文件随机生成独立的 256 位数据密钥，并为每个分片使用唯一 nonce，避免不同文件共用加密材料。</span>
+              </div>
+              <div className="security-details-item">
+                <strong>密钥采用信封加密保护</strong>
+                <span>文件的数据密钥会由服务端主密钥再次加密后随文件保存，主密钥仅保留在服务端配置或受限密钥文件中。</span>
+              </div>
+              <div className="security-details-item">
+                <strong>下载时即时解密</strong>
+                <span>验证取件码并下载时，服务端按分片流式解密后发送给浏览器，不会在存储中额外生成完整明文副本。</span>
+              </div>
+              <p className="security-details-note">该机制主要防护磁盘被直接拷贝或备份泄露等场景；这是服务端透明加密，服务端本身具备解密能力。</p>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   )
 }

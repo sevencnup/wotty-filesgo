@@ -1,6 +1,6 @@
 const CHUNK_SIZE = 16 * 1024 * 1024
 const MAX_RETRIES = 4
-const SESSION_KEY_PREFIX = 'filesgo:upload:v2:'
+const SESSION_KEY_PREFIX = 'wotty-filesgo:upload:v2:'
 
 export interface UploadResult {
   code: string

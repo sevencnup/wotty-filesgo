@@ -71,16 +71,16 @@ fn decode_hex_to_32(hex_str: &str) -> Option<[u8; 32]> {
     Some(key)
 }
 
-/// Loads the master key from FILESGO_MASTER_KEY (64 hex chars), else from
+/// Loads the master key from WOTTY_FILESGO_MASTER_KEY (64 hex chars), else from
 /// uploads/master.key, else generates and persists a fresh one.
 pub fn ensure_master_key() -> Result<(), String> {
-    if let Ok(value) = std::env::var("FILESGO_MASTER_KEY") {
+    if let Ok(value) = std::env::var("WOTTY_FILESGO_MASTER_KEY") {
         if let Some(key) = decode_hex_to_32(&value) {
             let _ = MASTER_KEY.set(key);
-            log::info!("Master key loaded from FILESGO_MASTER_KEY");
+            log::info!("Master key loaded from WOTTY_FILESGO_MASTER_KEY");
             return Ok(());
         }
-        return Err("FILESGO_MASTER_KEY 必须是 64 位十六进制（32 字节）".to_string());
+        return Err("WOTTY_FILESGO_MASTER_KEY 必须是 64 位十六进制（32 字节）".to_string());
     }
 
     let path = PathBuf::from("uploads/master.key");
@@ -102,7 +102,7 @@ pub fn ensure_master_key() -> Result<(), String> {
         let _ = fs::set_permissions(&path, fs::Permissions::from_mode(0o600));
     }
     let _ = MASTER_KEY.set(key);
-    log::warn!("生成了新的主密钥并保存到 uploads/master.key；生产环境建议改用 FILESGO_MASTER_KEY");
+    log::warn!("生成了新的主密钥并保存到 uploads/master.key；生产环境建议改用 WOTTY_FILESGO_MASTER_KEY");
     Ok(())
 }
 
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn multi_segment_round_trip() {
-        std::env::set_var("FILESGO_MASTER_KEY", hex::encode([1u8; 32]));
+        std::env::set_var("WOTTY_FILESGO_MASTER_KEY", hex::encode([1u8; 32]));
         ensure_master_key().unwrap();
         let segment_size = 2 * 1024 * 1024;
         let total = 5 * 1024 * 1024 + 17;
@@ -278,7 +278,7 @@ mod tests {
 
     #[test]
     fn header_round_trip() {
-        std::env::set_var("FILESGO_MASTER_KEY", hex::encode([2u8; 32]));
+        std::env::set_var("WOTTY_FILESGO_MASTER_KEY", hex::encode([2u8; 32]));
         ensure_master_key().unwrap();
         let dek: [u8; 32] = [3u8; 32];
         let base: [u8; 12] = [4u8; 12];

@@ -71,7 +71,7 @@ async fn main() -> std::io::Result<()> {
     log::info!("Configuration loaded, daily upload limit: {} times",
         config.rate_limit.max_uploads_per_day);
 
-    let db = init_db("FilesGO.db").expect("Failed to initialize database");
+    let db = init_db("wotty-filesgo.db").expect("Failed to initialize database");
     log::info!("Database initialized");
 
     let hub = websocket::HubActor::new().start();

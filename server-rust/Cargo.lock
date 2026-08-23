@@ -3,39 +3,6 @@
 version = 4
 
 [[package]]
-name = "FilesGO-server"
-version = "0.1.0"
-dependencies = [
- "actix",
- "actix-cors",
- "actix-files",
- "actix-multipart",
- "actix-web",
- "actix-web-actors",
- "aes-gcm",
- "bytes",
- "chrono",
- "env_logger",
- "futures-util",
- "hex",
- "log",
- "mime",
- "mime_guess",
- "parking_lot",
- "rand 0.8.5",
- "rusqlite",
- "sanitize-filename",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "tokio",
- "tokio-stream",
- "urlencoding",
- "uuid",
-]
-
-[[package]]
 name = "actix"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2543,6 +2510,39 @@ dependencies = [
  "serde_json",
  "unicode-xid",
  "wasmparser",
+]
+
+[[package]]
+name = "wotty-filesgo-server"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-cors",
+ "actix-files",
+ "actix-multipart",
+ "actix-web",
+ "actix-web-actors",
+ "aes-gcm",
+ "bytes",
+ "chrono",
+ "env_logger",
+ "futures-util",
+ "hex",
+ "log",
+ "mime",
+ "mime_guess",
+ "parking_lot",
+ "rand 0.8.5",
+ "rusqlite",
+ "sanitize-filename",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "tokio",
+ "tokio-stream",
+ "urlencoding",
+ "uuid",
 ]
 
 [[package]]
