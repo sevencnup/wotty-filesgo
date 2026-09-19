@@ -135,6 +135,8 @@ export default function HomePage() {
 
   useEffect(() => {
     const controller = new AbortController()
+    let disposed = false
+    const timeoutId = window.setTimeout(() => controller.abort(), 5000)
     fetch('/api/auth/status', { credentials: 'include', signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error('auth status failed')
@@ -144,12 +146,17 @@ export default function HomePage() {
         setAuthState(!data.protected || data.authenticated ? 'authenticated' : 'locked')
       })
       .catch(() => {
-        if (!controller.signal.aborted) {
+        if (!disposed) {
           setAuthState('locked')
           setAuthError(t.siteNetworkError)
         }
       })
-    return () => controller.abort()
+      .finally(() => window.clearTimeout(timeoutId))
+    return () => {
+      disposed = true
+      window.clearTimeout(timeoutId)
+      controller.abort()
+    }
   }, [t.siteNetworkError])
 
   const handleSiteLogin = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -158,12 +165,15 @@ export default function HomePage() {
 
     setIsLoggingIn(true)
     setAuthError('')
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000)
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: sitePassword }),
+        signal: controller.signal,
       })
       const data = await response.json().catch(() => ({})) as { error?: string; authenticated?: boolean }
       if (!response.ok || !data.authenticated) {
@@ -173,8 +183,9 @@ export default function HomePage() {
       setSitePassword('')
       setAuthState('authenticated')
     } catch {
-      setAuthError(t.siteNetworkError)
+      setAuthError(controller.signal.aborted ? '验证请求超时，请检查服务状态' : t.siteNetworkError)
     } finally {
+      window.clearTimeout(timeoutId)
       setIsLoggingIn(false)
     }
   }

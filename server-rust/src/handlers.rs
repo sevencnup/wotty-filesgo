@@ -117,7 +117,8 @@ pub async fn site_auth_middleware(
     req: ServiceRequest,
     next: Next<impl MessageBody + 'static>,
 ) -> Result<ServiceResponse<BoxBody>, Error> {
-    let public_path = matches!(req.path(), "/api/auth/login" | "/api/auth/status");
+    let path = req.path();
+    let public_path = path.ends_with("/auth/login") || path.ends_with("/auth/status");
     let authenticated = req
         .app_data::<web::Data<AppState>>()
         .map(|state| request_is_authenticated(req.request(), state))
