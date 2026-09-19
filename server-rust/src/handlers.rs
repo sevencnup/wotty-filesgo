@@ -115,10 +115,11 @@ pub async fn upload_file(
                 }
             };
             total_size += data.len() as i64;
-            if total_size as u64 > crate::uploads::MAX_FILE_SIZE {
+            let max_file_size = config.upload.max_file_size_bytes();
+            if total_size as u64 > max_file_size {
                 drop(f);
                 fs::remove_file(&filepath).ok();
-                return HttpResponse::PayloadTooLarge().json(serde_json::json!({"error": "文件超过 10 GB 限制"}));
+                return HttpResponse::PayloadTooLarge().json(serde_json::json!({"error": format!("文件超过 {} GB 限制", config.upload.max_file_size_gb)}));
             }
             if f.write_all(&data).is_err() {
                 return HttpResponse::InternalServerError().json(serde_json::json!({"error": "写入文件失败"}));
@@ -159,6 +160,15 @@ pub async fn upload_file(
     }
 
     HttpResponse::BadRequest().json(serde_json::json!({"error": "没有上传文件"}))
+}
+
+pub async fn get_public_config() -> impl Responder {
+    let upload = &AppConfig::get().upload;
+    HttpResponse::Ok().json(serde_json::json!({
+        "max_file_size_bytes": upload.max_file_size_bytes(),
+        "max_total_size_bytes": upload.max_total_size_bytes(),
+        "chunk_size_bytes": upload.chunk_size_bytes(),
+    }))
 }
 
 fn generate_unique_code(file_records: &FileRecords) -> String {

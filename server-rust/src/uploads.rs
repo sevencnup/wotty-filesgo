@@ -12,11 +12,17 @@ use std::path::PathBuf;
 use tokio::io::{AsyncWriteExt, BufWriter};
 use uuid::Uuid;
 
-pub const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024 * 1024;
-pub const DEFAULT_CHUNK_SIZE: u64 = 8 * 1024 * 1024;
 const MIN_CHUNK_SIZE: u64 = 1024 * 1024;
 const MAX_CHUNK_SIZE: u64 = 32 * 1024 * 1024;
 const SESSION_TTL_SECONDS: i64 = 24 * 60 * 60;
+
+pub fn max_file_size_bytes() -> u64 {
+    AppConfig::get().upload.max_file_size_bytes()
+}
+
+pub fn default_chunk_size_bytes() -> u64 {
+    AppConfig::get().upload.chunk_size_bytes()
+}
 
 #[derive(Debug, Deserialize)]
 pub struct CreateUploadRequest {
@@ -125,12 +131,13 @@ pub async fn create_upload(
         return HttpResponse::TooManyRequests()
             .json(serde_json::json!({"error": "今日上传次数已达上限"}));
     }
-    if body.size > MAX_FILE_SIZE {
+    let upload_config = &AppConfig::get().upload;
+    if body.size > upload_config.max_file_size_bytes() {
         return HttpResponse::PayloadTooLarge()
-            .json(serde_json::json!({"error": "文件超过 10 GB 限制"}));
+            .json(serde_json::json!({"error": format!("文件超过 {} GB 限制", upload_config.max_file_size_gb)}));
     }
 
-    let chunk_size = body.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+    let chunk_size = body.chunk_size.unwrap_or_else(default_chunk_size_bytes);
     if !(MIN_CHUNK_SIZE..=MAX_CHUNK_SIZE).contains(&chunk_size) {
         return HttpResponse::BadRequest()
             .json(serde_json::json!({"error": "分片大小必须在 1 MB 到 32 MB 之间"}));
@@ -545,7 +552,7 @@ mod tests {
     }
 
     #[test]
-    fn ten_gibibytes_is_the_hard_limit() {
-        assert_eq!(MAX_FILE_SIZE, 10_737_418_240);
+    fn configured_file_size_is_ten_gibibytes_by_default() {
+        assert_eq!(max_file_size_bytes(), 10_737_418_240);
     }
 }

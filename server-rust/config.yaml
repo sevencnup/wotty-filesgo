@@ -13,3 +13,9 @@ retention:
 # 上传频率限制
 rate_limit:
   max_uploads_per_day: 0    # 每个IP每天最多上传次数（0表示不限制）
+
+# 上传配置
+upload:
+  max_file_size_gb: 10      # 单个文件最大大小（GB）
+  max_total_size_gb: 20     # 当前批次最多选择的文件总大小（GB）
+  chunk_size_mb: 8          # 分片大小（MB），允许 1-32 MB

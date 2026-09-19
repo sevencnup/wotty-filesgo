@@ -1,6 +1,17 @@
-const CHUNK_SIZE = 8 * 1024 * 1024
 const MAX_RETRIES = 4
-const SESSION_KEY_PREFIX = 'wotty-filesgo:upload:v3:'
+const SESSION_KEY_PREFIX = 'wotty-filesgo:upload:v4:'
+
+export interface UploadConfig {
+  maxFileSizeBytes: number
+  maxTotalSizeBytes: number
+  chunkSizeBytes: number
+}
+
+export const DEFAULT_UPLOAD_CONFIG: UploadConfig = {
+  maxFileSizeBytes: 10 * 1024 * 1024 * 1024,
+  maxTotalSizeBytes: 20 * 1024 * 1024 * 1024,
+  chunkSizeBytes: 8 * 1024 * 1024,
+}
 
 export type UploadStage = 'preparing' | 'uploading' | 'assembling'
 
@@ -31,6 +42,7 @@ interface UploadStatus {
 
 interface UploadOptions {
   file: File
+  config: UploadConfig
   signal: AbortSignal
   onProgress: (progress: UploadProgress) => void
 }
@@ -178,13 +190,32 @@ const getUploadStatus = async (uploadId: string, signal: AbortSignal) => {
   return response.json() as Promise<UploadStatus>
 }
 
-const createUpload = async (file: File, signal: AbortSignal) => {
+export const fetchUploadConfig = async (signal?: AbortSignal): Promise<UploadConfig> => {
+  const response = await fetch('/api/config', { signal })
+  if (!response.ok) throw new Error('读取上传配置失败')
+  const data = await response.json() as {
+    max_file_size_bytes?: number
+    max_total_size_bytes?: number
+    chunk_size_bytes?: number
+  }
+  const config = {
+    maxFileSizeBytes: data.max_file_size_bytes,
+    maxTotalSizeBytes: data.max_total_size_bytes,
+    chunkSizeBytes: data.chunk_size_bytes,
+  }
+  if (!Object.values(config).every(value => typeof value === 'number' && Number.isFinite(value) && value > 0)) {
+    throw new Error('上传配置无效')
+  }
+  return config as UploadConfig
+}
+
+const createUpload = async (file: File, config: UploadConfig, signal: AbortSignal) => {
   const response = await fetch('/api/uploads', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ filename: file.name, size: file.size, chunk_size: CHUNK_SIZE }),
+    body: JSON.stringify({ filename: file.name, size: file.size, chunk_size: config.chunkSizeBytes }),
     signal,
   })
   if (!response.ok) throw await responseError(response, '创建上传会话失败')
@@ -270,7 +301,7 @@ const connectionConcurrency = () => {
   return 3
 }
 
-export async function uploadFileResumable({ file, signal, onProgress }: UploadOptions): Promise<UploadResult> {
+export async function uploadFileResumable({ file, config, signal, onProgress }: UploadOptions): Promise<UploadResult> {
   throwIfAborted(signal)
   onProgress({
     loaded: 0,
@@ -288,13 +319,13 @@ export async function uploadFileResumable({ file, signal, onProgress }: UploadOp
   try {
     if (uploadId) {
       status = await getUploadStatus(uploadId, signal)
-      if (status && (status.size !== file.size || status.filename !== file.name || status.chunk_size !== CHUNK_SIZE)) {
+      if (status && (status.size !== file.size || status.filename !== file.name || status.chunk_size !== config.chunkSizeBytes)) {
         status = null
       }
     }
     if (!status) {
       storageRemove(storageKey)
-      status = await createUpload(file, signal)
+      status = await createUpload(file, config, signal)
       uploadId = status.upload_id
       storageSet(storageKey, uploadId)
     }

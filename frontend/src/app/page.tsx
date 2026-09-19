@@ -16,7 +16,14 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react'
-import { uploadFileResumable, UploadCancelledError, type UploadStage } from '@/lib/resumable-upload'
+import {
+  DEFAULT_UPLOAD_CONFIG,
+  fetchUploadConfig,
+  uploadFileResumable,
+  UploadCancelledError,
+  type UploadConfig,
+  type UploadStage,
+} from '@/lib/resumable-upload'
 
 const translations = {
   zh: {
@@ -29,7 +36,7 @@ const translations = {
     passwordHint: '验证密码后即可上传文件',
     verify: '验证',
     dropzoneText: '点击上传文件或拖拽到此处',
-    dropzoneHint: '单个文件最大 10GB，单次最多 20GB',
+    dropzoneHint: '单个文件最大',
     uploading: '正在上传...',
     uploadPreparing: '正在准备上传...',
     uploadUploading: '正在上传并校验分片...',
@@ -65,7 +72,8 @@ const translations = {
     uploadFailed: '上传失败',
     uploadCancelled: '上传已取消',
     confirmCancel: '确定要取消上传',
-    fileTooLarge: '超过 10GB 限制，已跳过',
+    fileTooLarge: '超过单文件大小限制，已跳过',
+    totalTooLarge: '超过单次上传总大小限制，已跳过',
     passwordRequired: '请先验证上传密码',
   },
 }
@@ -95,6 +103,7 @@ export default function HomePage() {
   const [uploadSpeedBps, setUploadSpeedBps] = useState<number | null>(null)
   const [uploadEtaSec, setUploadEtaSec] = useState<number | null>(null)
   const [uploadStage, setUploadStage] = useState<UploadStage>('preparing')
+  const [uploadConfig, setUploadConfig] = useState<UploadConfig>(DEFAULT_UPLOAD_CONFIG)
   const [receiveCode, setReceiveCode] = useState('')
   const [receiveCodeSlots, setReceiveCodeSlots] = useState<string[]>(() => Array(6).fill(''))
   const [receiveStatus, setReceiveStatus] = useState({ text: '', type: '' })
@@ -141,18 +150,26 @@ export default function HomePage() {
     : uploadStage === 'assembling'
       ? t.uploadAssembling
       : t.uploadUploading
+  const maxFileSizeLabel = formatSize(uploadConfig.maxFileSizeBytes)
+  const maxTotalSizeLabel = formatSize(uploadConfig.maxTotalSizeBytes)
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return
 
-    const maxSize = 10 * 1024 * 1024 * 1024
+    const queuedSize = uploadQueue.reduce((sum, item) => sum + item.file.size, 0)
+    let selectedSize = 0
     const newFiles: UploadItem[] = []
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      if (file.size > maxSize) {
+      if (file.size > uploadConfig.maxFileSizeBytes) {
         showToast(`${file.name} ${t.fileTooLarge}`, 'error')
         continue
       }
+      if (queuedSize + selectedSize + file.size > uploadConfig.maxTotalSizeBytes) {
+        showToast(`${file.name} ${t.totalTooLarge}`, 'error')
+        continue
+      }
+      selectedSize += file.size
       newFiles.push({
         id: Date.now() + Math.random().toString(36).substring(2),
         file,
@@ -179,6 +196,7 @@ export default function HomePage() {
     try {
       return await uploadFileResumable({
         file,
+        config: uploadConfig,
         signal: controller.signal,
         onProgress: ({ percent, bytesPerSecond, etaSeconds, stage }) => {
           setProgress(percent)
@@ -226,11 +244,21 @@ export default function HomePage() {
 
     setIsUploading(false)
     setCurrentUpload(null)
-  }, [isUploading, uploadQueue, showToast])
+  }, [isUploading, uploadQueue, showToast, uploadConfig])
 
   useEffect(() => {
     if (uploadQueue.some((item) => item.status === 'waiting') && !isUploading) processQueue()
   }, [uploadQueue, isUploading, processQueue])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchUploadConfig(controller.signal)
+      .then(setUploadConfig)
+      .catch(() => {
+        // Keep the safe defaults when the public configuration endpoint is unavailable.
+      })
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     const prevent = (e: DragEvent) => {
@@ -427,7 +455,7 @@ export default function HomePage() {
             <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()}>
               <div className="upload-illustration"><Image src="/download.webp" alt="上传文件" width={320} height={160} className="upload-image" /></div>
               <h2>{t.dropzoneText}</h2>
-              <p>{t.dropzoneHint}</p>
+              <p>{t.dropzoneHint} {maxFileSizeLabel}，单次最多 {maxTotalSizeLabel}</p>
             </div>
 
             {uploadQueue.length > 0 && (

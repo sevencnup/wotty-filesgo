@@ -9,6 +9,8 @@ pub struct AppConfig {
     pub server: ServerConfig,
     pub retention: RetentionConfig,
     pub rate_limit: RateLimitConfig,
+    #[serde(default)]
+    pub upload: UploadConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -28,6 +30,44 @@ pub struct RateLimitConfig {
     pub max_uploads_per_day: i32,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct UploadConfig {
+    #[serde(default = "default_max_file_size_gb")]
+    pub max_file_size_gb: u64,
+    #[serde(default = "default_max_total_size_gb")]
+    pub max_total_size_gb: u64,
+    #[serde(default = "default_chunk_size_mb")]
+    pub chunk_size_mb: u64,
+}
+
+const fn default_max_file_size_gb() -> u64 { 10 }
+const fn default_max_total_size_gb() -> u64 { 20 }
+const fn default_chunk_size_mb() -> u64 { 8 }
+
+impl Default for UploadConfig {
+    fn default() -> Self {
+        Self {
+            max_file_size_gb: default_max_file_size_gb(),
+            max_total_size_gb: default_max_total_size_gb(),
+            chunk_size_mb: default_chunk_size_mb(),
+        }
+    }
+}
+
+impl UploadConfig {
+    pub fn max_file_size_bytes(&self) -> u64 {
+        self.max_file_size_gb.saturating_mul(1024 * 1024 * 1024)
+    }
+
+    pub fn max_total_size_bytes(&self) -> u64 {
+        self.max_total_size_gb.saturating_mul(1024 * 1024 * 1024)
+    }
+
+    pub fn chunk_size_bytes(&self) -> u64 {
+        self.chunk_size_mb.clamp(1, 32) * 1024 * 1024
+    }
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
@@ -40,6 +80,7 @@ impl Default for AppConfig {
             rate_limit: RateLimitConfig {
                 max_uploads_per_day: 100,
             },
+            upload: UploadConfig::default(),
         }
     }
 }

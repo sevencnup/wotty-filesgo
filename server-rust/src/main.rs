@@ -116,6 +116,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::default())
             .service(
                 web::scope("/api")
+                    .route("/config", web::get().to(handlers::get_public_config))
                     .route("/upload", web::post().to(handlers::upload_file))
                     .route("/uploads", web::post().to(uploads::create_upload))
                     .route("/uploads/{upload_id}", web::get().to(uploads::get_upload_status))

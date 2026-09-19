@@ -25,6 +25,9 @@
 
 ## Minor Versions
 
+### V2.0.5 (2026-09-19)
+- 上传限制支持通过 `config.yaml` 配置，并同步前端展示、校验和分片大小。
+
 ### V2.0.4 (2026-08-20)
 - 修复 GitHub Actions Docker 镜像构建失败：改为在镜像内从源码构建前端静态产物，不再依赖未提交到 git 的 `server-rust/dist`；同时把 `frontend/package-lock.json` 的 `resolved` 指向改写为官方 `registry.npmjs.org`，本地安装仍走 npmmirror。CI 与服务器部署均自包含。
 
