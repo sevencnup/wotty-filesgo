@@ -1,7 +1,7 @@
 use crate::config::AppConfig;
 use crate::crypto;
 use crate::database;
-use crate::handlers::{get_client_ip, increment_ip_upload_count, AppState};
+use crate::handlers::{get_client_ip, try_reserve_upload_slot, AppState};
 use crate::models::{FileRecord, InMemoryFileRecord};
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use futures_util::StreamExt;
@@ -127,10 +127,6 @@ pub async fn create_upload(
 ) -> impl Responder {
 
     let client_ip = get_client_ip(&req);
-    if !crate::handlers::is_upload_allowed(&state.ip_upload_records, &client_ip) {
-        return HttpResponse::TooManyRequests()
-            .json(serde_json::json!({"error": "今日上传次数已达上限"}));
-    }
     let upload_config = &AppConfig::get().upload;
     if body.size > upload_config.max_file_size_bytes() {
         return HttpResponse::PayloadTooLarge()
@@ -141,6 +137,10 @@ pub async fn create_upload(
     if !(MIN_CHUNK_SIZE..=MAX_CHUNK_SIZE).contains(&chunk_size) {
         return HttpResponse::BadRequest()
             .json(serde_json::json!({"error": "分片大小必须在 1 MB 到 32 MB 之间"}));
+    }
+    if !try_reserve_upload_slot(&state.ip_upload_records, &client_ip) {
+        return HttpResponse::TooManyRequests()
+            .json(serde_json::json!({"error": "今日上传次数已达上限"}));
     }
 
     let filename = sanitize_filename::sanitize(&body.filename);
@@ -331,7 +331,7 @@ fn generate_unique_code(state: &AppState) -> String {
 
 pub async fn complete_upload(
     state: web::Data<AppState>,
-    req: HttpRequest,
+    _req: HttpRequest,
     path: web::Path<String>,
 ) -> impl Responder {
     let upload_id = match normalize_upload_id(&path) {
@@ -458,7 +458,6 @@ pub async fn complete_upload(
             first_download_at: None,
         },
     );
-    increment_ip_upload_count(&state.ip_upload_records, &get_client_ip(&req));
     tokio::fs::remove_dir_all(session_dir(&upload_id))
         .await
         .ok();

@@ -12,7 +12,9 @@ retention:
 
 # 上传频率限制
 rate_limit:
-  max_uploads_per_day: 0    # 每个IP每天最多上传次数（0表示不限制）
+  max_uploads_per_day: 20   # 每个IP每天最多上传次数（0表示不限制）
+  allowed_ips: []           # 免除上传次数限制的IP白名单，例如 ["203.0.113.10"]
+  trusted_proxy_ips: []     # 信任并读取 X-Forwarded-For 的反向代理IP；直连部署保持为空
 
 # 上传配置
 upload:

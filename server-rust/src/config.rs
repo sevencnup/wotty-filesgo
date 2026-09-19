@@ -8,6 +8,7 @@ static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 pub struct AppConfig {
     pub server: ServerConfig,
     pub retention: RetentionConfig,
+    #[serde(default)]
     pub rate_limit: RateLimitConfig,
     #[serde(default)]
     pub upload: UploadConfig,
@@ -27,7 +28,26 @@ pub struct RetentionConfig {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct RateLimitConfig {
+    #[serde(default = "default_max_uploads_per_day")]
     pub max_uploads_per_day: i32,
+    #[serde(default)]
+    pub allowed_ips: Vec<String>,
+    #[serde(default)]
+    pub trusted_proxy_ips: Vec<String>,
+}
+
+const fn default_max_uploads_per_day() -> i32 {
+    100
+}
+
+impl Default for RateLimitConfig {
+    fn default() -> Self {
+        Self {
+            max_uploads_per_day: default_max_uploads_per_day(),
+            allowed_ips: Vec::new(),
+            trusted_proxy_ips: Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -79,6 +99,8 @@ impl Default for AppConfig {
             },
             rate_limit: RateLimitConfig {
                 max_uploads_per_day: 100,
+                allowed_ips: Vec::new(),
+                trusted_proxy_ips: Vec::new(),
             },
             upload: UploadConfig::default(),
         }

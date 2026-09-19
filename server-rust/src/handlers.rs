@@ -40,21 +40,34 @@ fn now_timestamp() -> i64 {
 }
 
 pub(crate) fn get_client_ip(req: &HttpRequest) -> String {
-    if let Some(forwarded) = req.headers().get("X-Forwarded-For") {
-        if let Ok(forwarded_str) = forwarded.to_str() {
-            if let Some(ip) = forwarded_str.split(',').next() {
-                return ip.trim().to_string();
+    let peer_ip = req.peer_addr().map(|addr| addr.ip().to_string());
+    let is_trusted_proxy = peer_ip
+        .as_deref()
+        .map(|ip| is_ip_allowed(ip, &AppConfig::get().rate_limit.trusted_proxy_ips))
+        .unwrap_or(false);
+
+    if is_trusted_proxy {
+        if let Some(forwarded) = req.headers().get("X-Forwarded-For") {
+            if let Ok(forwarded_str) = forwarded.to_str() {
+                if let Some(ip) = forwarded_str.split(',').next() {
+                    let ip = ip.trim();
+                    if !ip.is_empty() {
+                        return ip.to_string();
+                    }
+                }
+            }
+        }
+        if let Some(real_ip) = req.headers().get("X-Real-IP") {
+            if let Ok(ip) = real_ip.to_str() {
+                let ip = ip.trim();
+                if !ip.is_empty() {
+                    return ip.to_string();
+                }
             }
         }
     }
-    if let Some(real_ip) = req.headers().get("X-Real-IP") {
-        if let Ok(ip) = real_ip.to_str() {
-            return ip.to_string();
-        }
-    }
-    req.peer_addr()
-        .map(|addr| addr.ip().to_string())
-        .unwrap_or_else(|| "unknown".to_string())
+
+    peer_ip.unwrap_or_else(|| "unknown".to_string())
 }
 
 fn is_same_day(t1: i64, t2: i64) -> bool {
@@ -70,7 +83,7 @@ pub async fn upload_file(
 ) -> impl Responder {
     let config = AppConfig::get();
     let client_ip = get_client_ip(&req);
-    if !is_upload_allowed(&state.ip_upload_records, &client_ip) {
+    if !try_reserve_upload_slot(&state.ip_upload_records, &client_ip) {
         return HttpResponse::TooManyRequests().json(serde_json::json!({"error": "今日上传次数已达上限"}));
     }
     
@@ -144,8 +157,6 @@ pub async fn upload_file(
             },
         );
 
-        increment_ip_upload_count(&state.ip_upload_records, &client_ip);
-
         log::info!("[UPLOAD] Upload success - code: {}, IP: {}", code, client_ip);
 
         return HttpResponse::Ok().json(serde_json::json!({
@@ -180,23 +191,26 @@ fn generate_unique_code(file_records: &FileRecords) -> String {
     }
 }
 
-pub(crate) fn is_upload_allowed(ip_records: &IpUploadRecords, client_ip: &str) -> bool {
-    let limit = AppConfig::get().rate_limit.max_uploads_per_day;
-    if limit == 0 {
-        return true;
-    }
-    let now = now_timestamp();
-    ip_records
-        .read()
-        .get(client_ip)
-        .map(|record| !is_same_day(record.last_upload, now) || record.count < limit)
-        .unwrap_or(true)
+pub(crate) fn is_ip_allowed(client_ip: &str, allowed_ips: &[String]) -> bool {
+    allowed_ips
+        .iter()
+        .any(|allowed_ip| allowed_ip.trim() == client_ip)
 }
 
-pub(crate) fn increment_ip_upload_count(ip_records: &IpUploadRecords, client_ip: &str) {
+fn try_reserve_upload_slot_with_config(
+    ip_records: &IpUploadRecords,
+    client_ip: &str,
+    rate_limit: &crate::config::RateLimitConfig,
+) -> bool {
+    if rate_limit.max_uploads_per_day <= 0
+        || is_ip_allowed(client_ip, &rate_limit.allowed_ips)
+    {
+        return true;
+    }
+
     let mut records = ip_records.write();
     let now = now_timestamp();
-    
+
     let record = records.entry(client_ip.to_string()).or_insert(IpUploadRecord {
         count: 0,
         last_upload: now,
@@ -205,9 +219,25 @@ pub(crate) fn increment_ip_upload_count(ip_records: &IpUploadRecords, client_ip:
     if !is_same_day(record.last_upload, now) {
         record.count = 0;
     }
-    
+
+    if record.count >= rate_limit.max_uploads_per_day {
+        return false;
+    }
+
     record.count += 1;
     record.last_upload = now;
+    true
+}
+
+pub(crate) fn try_reserve_upload_slot(
+    ip_records: &IpUploadRecords,
+    client_ip: &str,
+) -> bool {
+    try_reserve_upload_slot_with_config(
+        ip_records,
+        client_ip,
+        &AppConfig::get().rate_limit,
+    )
 }
 
 pub async fn upload_chunk(
@@ -262,7 +292,7 @@ pub async fn upload_chunk(
 
 pub async fn upload_complete(
     state: web::Data<AppState>,
-    req: HttpRequest,
+    _req: HttpRequest,
     body: web::Json<UploadCompleteRequest>,
 ) -> impl Responder {
     let upload_dir = PathBuf::from("uploads");
@@ -321,9 +351,6 @@ pub async fn upload_complete(
             first_download_at: None,
         },
     );
-
-    let client_ip = get_client_ip(&req);
-    increment_ip_upload_count(&state.ip_upload_records, &client_ip);
 
     HttpResponse::Ok().json(serde_json::json!({
         "code": code,
@@ -904,5 +931,50 @@ pub async fn websocket_route(
     match ws::start(client, &req, stream) {
         Ok(response) => response,
         Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::RateLimitConfig;
+
+    fn records() -> IpUploadRecords {
+        Arc::new(RwLock::new(HashMap::new()))
+    }
+
+    #[test]
+    fn allowed_ip_bypasses_daily_upload_limit() {
+        let records = records();
+        let config = RateLimitConfig {
+            max_uploads_per_day: 1,
+            allowed_ips: vec!["203.0.113.10".to_string()],
+            trusted_proxy_ips: Vec::new(),
+        };
+
+        assert!(try_reserve_upload_slot_with_config(
+            &records,
+            "203.0.113.10",
+            &config
+        ));
+        assert!(try_reserve_upload_slot_with_config(
+            &records,
+            "203.0.113.10",
+            &config
+        ));
+    }
+
+    #[test]
+    fn non_allowed_ip_is_rejected_after_daily_limit() {
+        let records = records();
+        let config = RateLimitConfig {
+            max_uploads_per_day: 2,
+            allowed_ips: Vec::new(),
+            trusted_proxy_ips: Vec::new(),
+        };
+
+        assert!(try_reserve_upload_slot_with_config(&records, "203.0.113.11", &config));
+        assert!(try_reserve_upload_slot_with_config(&records, "203.0.113.11", &config));
+        assert!(!try_reserve_upload_slot_with_config(&records, "203.0.113.11", &config));
     }
 }
