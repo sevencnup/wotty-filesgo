@@ -1,6 +1,8 @@
-const CHUNK_SIZE = 16 * 1024 * 1024
+const CHUNK_SIZE = 8 * 1024 * 1024
 const MAX_RETRIES = 4
-const SESSION_KEY_PREFIX = 'wotty-filesgo:upload:v2:'
+const SESSION_KEY_PREFIX = 'wotty-filesgo:upload:v3:'
+
+export type UploadStage = 'preparing' | 'uploading' | 'assembling'
 
 export interface UploadResult {
   code: string
@@ -15,6 +17,7 @@ export interface UploadProgress {
   percent: number
   bytesPerSecond: number | null
   etaSeconds: number | null
+  stage: UploadStage
 }
 
 interface UploadStatus {
@@ -269,6 +272,14 @@ const connectionConcurrency = () => {
 
 export async function uploadFileResumable({ file, signal, onProgress }: UploadOptions): Promise<UploadResult> {
   throwIfAborted(signal)
+  onProgress({
+    loaded: 0,
+    total: file.size,
+    percent: file.size === 0 ? 100 : 0,
+    bytesPerSecond: null,
+    etaSeconds: null,
+    stage: 'preparing',
+  })
   const fingerprint = await fileFingerprint(file)
   const storageKey = SESSION_KEY_PREFIX + fingerprint
   let status: UploadStatus | null = null
@@ -292,10 +303,12 @@ export async function uploadFileResumable({ file, signal, onProgress }: UploadOp
     const progressByChunk = new Map<number, number>()
     const chunkLength = (index: number) => Math.min(status!.chunk_size, file.size - index * status!.chunk_size)
     completed.forEach(index => progressByChunk.set(index, chunkLength(index)))
+    let stage: UploadStage = 'preparing'
 
     let lastEmitted = 0
     const samples: Array<{ time: number; loaded: number }> = []
-    const emitProgress = (force = false) => {
+    const emitProgress = (force = false, nextStage: UploadStage = stage) => {
+      stage = nextStage
       const now = performance.now()
       if (!force && now - lastEmitted < 100) return
       const loaded = Math.min(file.size, Array.from(progressByChunk.values()).reduce((sum, value) => sum + value, 0))
@@ -310,6 +323,7 @@ export async function uploadFileResumable({ file, signal, onProgress }: UploadOp
         percent: file.size === 0 ? 100 : (loaded / file.size) * 100,
         bytesPerSecond: bytesPerSecond && bytesPerSecond > 0 ? bytesPerSecond : null,
         etaSeconds: bytesPerSecond && bytesPerSecond > 0 ? (file.size - loaded) / bytesPerSecond : null,
+        stage,
       })
       lastEmitted = now
     }
@@ -329,6 +343,7 @@ export async function uploadFileResumable({ file, signal, onProgress }: UploadOp
         const start = index * originalStatus.chunk_size
         const chunk = file.slice(start, start + originalStatus.chunk_size)
         const hash = await sha256Hex(chunk)
+        emitProgress(true, 'uploading')
         let lastError: unknown
         for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
           try {
@@ -361,6 +376,7 @@ export async function uploadFileResumable({ file, signal, onProgress }: UploadOp
       signal.removeEventListener('abort', abortWorkers)
     }
 
+    emitProgress(true, 'assembling')
     const response = await fetch(`/api/uploads/${encodeURIComponent(status.upload_id)}/complete`, {
       method: 'POST',
       signal,

@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react'
-import { uploadFileResumable, UploadCancelledError } from '@/lib/resumable-upload'
+import { uploadFileResumable, UploadCancelledError, type UploadStage } from '@/lib/resumable-upload'
 
 const translations = {
   zh: {
@@ -30,6 +30,9 @@ const translations = {
     dropzoneText: '点击上传文件或拖拽到此处',
     dropzoneHint: '单个文件最大 10GB，单次最多 20GB',
     uploading: '正在上传...',
+    uploadPreparing: '正在准备上传...',
+    uploadUploading: '正在上传并校验分片...',
+    uploadAssembling: '正在合并文件...',
     waiting: '等待上传',
     pickupCode: '取件码',
     clickToCopy: '取件码已复制，可分享给对方',
@@ -90,6 +93,7 @@ export default function HomePage() {
   const [progress, setProgress] = useState(0)
   const [uploadSpeedBps, setUploadSpeedBps] = useState<number | null>(null)
   const [uploadEtaSec, setUploadEtaSec] = useState<number | null>(null)
+  const [uploadStage, setUploadStage] = useState<UploadStage>('preparing')
   const [receiveCode, setReceiveCode] = useState('')
   const [receiveCodeSlots, setReceiveCodeSlots] = useState<string[]>(() => Array(6).fill(''))
   const [receiveStatus, setReceiveStatus] = useState({ text: '', type: '' })
@@ -131,6 +135,12 @@ export default function HomePage() {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   }
 
+  const uploadStageLabel = uploadStage === 'preparing'
+    ? t.uploadPreparing
+    : uploadStage === 'assembling'
+      ? t.uploadAssembling
+      : t.uploadUploading
+
   const handleFileSelect = (files: FileList | null) => {
     if (!files) return
 
@@ -169,10 +179,11 @@ export default function HomePage() {
       return await uploadFileResumable({
         file,
         signal: controller.signal,
-        onProgress: ({ percent, bytesPerSecond, etaSeconds }) => {
+        onProgress: ({ percent, bytesPerSecond, etaSeconds, stage }) => {
           setProgress(percent)
           setUploadSpeedBps(bytesPerSecond)
           setUploadEtaSec(etaSeconds)
+          setUploadStage(stage)
         },
       })
     } finally {
@@ -192,6 +203,7 @@ export default function HomePage() {
     setProgress(0)
     setUploadSpeedBps(null)
     setUploadEtaSec(null)
+    setUploadStage('preparing')
 
     try {
       const result = await uploadSingleFile(currentItem.file)
@@ -360,6 +372,7 @@ export default function HomePage() {
     setProgress(0)
     setUploadSpeedBps(null)
     setUploadEtaSec(null)
+    setUploadStage('preparing')
   }
 
   const primaryResult = uploadResults[0]
@@ -478,9 +491,9 @@ export default function HomePage() {
           <aside className="share-card panel-card">
           {isUploading && currentUpload ? (
             <div className="share-upload-progress">
-              <h2>{t.uploading}</h2>
+              <h2>{uploadStageLabel}</h2>
               <div className="upload-progress">
-                <div className="upload-progress-heading"><span>{t.uploading}</span><strong>{Math.round(progress)}%</strong></div>
+                <div className="upload-progress-heading"><span>{uploadStageLabel}</span><strong>{Math.round(progress)}%</strong></div>
                 <p>{currentUpload.filename} · {formatSize(currentUpload.size)}</p>
                 <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>
                 <small>{formatSpeed(uploadSpeedBps)} · 剩余 {formatEta(uploadEtaSec)}</small>

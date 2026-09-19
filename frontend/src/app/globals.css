@@ -475,7 +475,8 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #4ca3f7, #1769e0);
-  transition: width 160ms ease;
+  will-change: width;
+  transition: width 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .upload-progress small {

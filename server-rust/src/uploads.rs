@@ -13,7 +13,7 @@ use tokio::io::{AsyncWriteExt, BufWriter};
 use uuid::Uuid;
 
 pub const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024 * 1024;
-pub const DEFAULT_CHUNK_SIZE: u64 = 16 * 1024 * 1024;
+pub const DEFAULT_CHUNK_SIZE: u64 = 8 * 1024 * 1024;
 const MIN_CHUNK_SIZE: u64 = 1024 * 1024;
 const MAX_CHUNK_SIZE: u64 = 32 * 1024 * 1024;
 const SESSION_TTL_SECONDS: i64 = 24 * 60 * 60;
