@@ -9,6 +9,7 @@ import {
   Copy,
   Download,
   FileText,
+  Github,
   HelpCircle,
   Link2,
   Plus,
@@ -403,13 +404,18 @@ export default function HomePage() {
             </button>
           </nav>
 
-          {/* <div className="header-actions">
-            <button className="help-button" onClick={() => showToast('文件将在有效期后自动清理', 'info')}>
-              <HelpCircle size={19} />
-              <span>{t.help}</span>
-            </button>
-            <UserCircle className="avatar-icon" size={38} strokeWidth={1.5} />
-          </div> */}
+          <div className="header-actions">
+            <a
+              className="github-link"
+              href="https://github.com/sevencnup/wotty-filesgo"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="在 GitHub 查看 wotty FilesGO 开源仓库"
+              title="GitHub 开源仓库"
+            >
+              <Github size={21} strokeWidth={1.9} aria-hidden="true" />
+            </a>
+          </div>
         </div>
       </header>
 

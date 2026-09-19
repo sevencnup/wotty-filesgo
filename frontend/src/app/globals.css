@@ -193,7 +193,34 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 25px;
+  gap: 14px;
+}
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #dce6f2;
+  border-radius: 12px;
+  color: #44546d;
+  background: rgba(247, 250, 255, 0.9);
+  box-shadow: 0 5px 14px rgba(53, 95, 145, 0.08);
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.github-link:hover {
+  border-color: #b9d5f4;
+  color: #171d2b;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(53, 95, 145, 0.14);
+  transform: translateY(-1px);
+}
+
+.github-link:focus-visible {
+  outline: 3px solid rgba(42, 131, 237, 0.24);
+  outline-offset: 3px;
 }
 
 .help-button {
@@ -1088,6 +1115,12 @@
 
   .header-actions {
     gap: 10px;
+  }
+
+  .github-link {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
   }
 
   .help-button span {
