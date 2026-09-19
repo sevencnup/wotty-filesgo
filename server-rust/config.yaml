@@ -16,6 +16,11 @@ rate_limit:
   allowed_ips: []           # 免除上传次数限制的IP白名单，例如 ["203.0.113.10"]
   trusted_proxy_ips: []     # 信任并读取 X-Forwarded-For 的反向代理IP；直连部署保持为空
 
+# 站点访问安全
+security:
+  site_password: ""     # 访问网站密码；留空表示关闭密码保护
+  max_login_attempts_per_minute: 10  # 单个IP每分钟最多尝试登录次数
+
 # 上传配置
 upload:
   max_file_size_gb: 10      # 单个文件最大大小（GB）

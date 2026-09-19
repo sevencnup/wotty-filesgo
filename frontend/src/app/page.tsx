@@ -8,9 +8,12 @@ import {
   Clock3,
   Copy,
   Download,
+  Eye,
+  EyeOff,
   FileText,
   Github,
   HelpCircle,
+  KeyRound,
   Link2,
   Plus,
   ShieldCheck,
@@ -75,6 +78,14 @@ const translations = {
     fileTooLarge: '超过单文件大小限制，已跳过',
     totalTooLarge: '超过单次上传总大小限制，已跳过',
     passwordRequired: '请先验证上传密码',
+    siteAccessTitle: '站点访问保护',
+    siteAccessSubtitle: '请输入访问密码后继续使用文件传输服务',
+    sitePasswordPlaceholder: '请输入站点访问密码',
+    sitePasswordHint: '密码由站点管理员在 config.yaml 中设置',
+    siteLogin: '进入站点',
+    siteChecking: '正在检查访问权限...',
+    siteLoginFailed: '密码错误，请重试',
+    siteNetworkError: '暂时无法连接服务器，请稍后重试',
   },
 }
 
@@ -92,6 +103,11 @@ type UploadResult = {
 }
 
 export default function HomePage() {
+  const [authState, setAuthState] = useState<'checking' | 'locked' | 'authenticated'>('checking')
+  const [sitePassword, setSitePassword] = useState('')
+  const [showSitePassword, setShowSitePassword] = useState(false)
+  const [authError, setAuthError] = useState('')
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [currentTab, setCurrentTab] = useState<'send' | 'receive'>('send')
   const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([])
   const [uploadResults, setUploadResults] = useState<UploadResult[]>([])
@@ -116,6 +132,52 @@ export default function HomePage() {
   const uploadControllerRef = useRef<AbortController | null>(null)
   const lastAutoCodeRef = useRef<string>('')
   const t = translations.zh
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch('/api/auth/status', { credentials: 'include', signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('auth status failed')
+        return response.json() as Promise<{ protected: boolean; authenticated: boolean }>
+      })
+      .then((data) => {
+        setAuthState(!data.protected || data.authenticated ? 'authenticated' : 'locked')
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setAuthState('locked')
+          setAuthError(t.siteNetworkError)
+        }
+      })
+    return () => controller.abort()
+  }, [t.siteNetworkError])
+
+  const handleSiteLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!sitePassword.trim() || isLoggingIn) return
+
+    setIsLoggingIn(true)
+    setAuthError('')
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: sitePassword }),
+      })
+      const data = await response.json().catch(() => ({})) as { error?: string; authenticated?: boolean }
+      if (!response.ok || !data.authenticated) {
+        setAuthError(data.error || t.siteLoginFailed)
+        return
+      }
+      setSitePassword('')
+      setAuthState('authenticated')
+    } catch {
+      setAuthError(t.siteNetworkError)
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
 
   const showToast = useCallback((message: string, type: string = 'info') => {
     setToast({ message, type })
@@ -251,6 +313,7 @@ export default function HomePage() {
   }, [uploadQueue, isUploading, processQueue])
 
   useEffect(() => {
+    if (authState !== 'authenticated') return
     const controller = new AbortController()
     fetchUploadConfig(controller.signal)
       .then(setUploadConfig)
@@ -258,7 +321,7 @@ export default function HomePage() {
         // Keep the safe defaults when the public configuration endpoint is unavailable.
       })
     return () => controller.abort()
-  }, [])
+  }, [authState])
 
   useEffect(() => {
     const prevent = (e: DragEvent) => {
@@ -354,6 +417,7 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    if (authState !== 'authenticated') return
     const path = window.location.pathname
     const urlParams = new URLSearchParams(window.location.search)
     let potentialCode = urlParams.get('code')
@@ -368,7 +432,7 @@ export default function HomePage() {
       lastAutoCodeRef.current = potentialCode
       handleDownload(potentialCode)
     }
-  }, [])
+  }, [authState])
 
   const copyToClipboard = async (text: string, successMessage: string) => {
     try {
@@ -406,6 +470,63 @@ export default function HomePage() {
 
   const primaryResult = uploadResults[0]
   const displayCode = primaryResult?.code || '------'
+
+  if (authState === 'checking') {
+    return (
+      <main className="site-gate">
+        <div className="site-gate-card site-gate-loading">
+          <Image src="/logo.webp" alt="wotty FilesGO" width={62} height={62} className="site-gate-logo" />
+          <span>{t.siteChecking}</span>
+        </div>
+      </main>
+    )
+  }
+
+  if (authState === 'locked') {
+    return (
+      <main className="site-gate">
+        <div className="site-gate-card">
+          <div className="site-gate-brand">
+            <Image src="/logo.webp" alt="wotty FilesGO" width={62} height={62} className="site-gate-logo" />
+            <span className="site-gate-kicker"><ShieldCheck size={15} /> PRIVATE TRANSFER SPACE</span>
+          </div>
+          <h1>{t.siteAccessTitle}</h1>
+          <p className="site-gate-subtitle">{t.siteAccessSubtitle}</p>
+          <form className="site-gate-form" onSubmit={handleSiteLogin}>
+            <label htmlFor="site-password">访问密码</label>
+            <div className="site-password-field">
+              <KeyRound size={18} aria-hidden="true" />
+              <input
+                id="site-password"
+                type={showSitePassword ? 'text' : 'password'}
+                value={sitePassword}
+                onChange={(event) => setSitePassword(event.target.value)}
+                placeholder={t.sitePasswordPlaceholder}
+                autoComplete="current-password"
+                autoFocus
+                disabled={isLoggingIn}
+              />
+              <button
+                type="button"
+                className="site-password-toggle"
+                onClick={() => setShowSitePassword((visible) => !visible)}
+                aria-label={showSitePassword ? '隐藏密码' : '显示密码'}
+              >
+                {showSitePassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              </button>
+            </div>
+            {authError && <p className="site-gate-error" role="alert">{authError}</p>}
+            <button className="site-gate-submit" type="submit" disabled={!sitePassword.trim() || isLoggingIn}>
+              <KeyRound size={17} />
+              {isLoggingIn ? '验证中...' : t.siteLogin}
+              {!isLoggingIn && <ChevronRight size={17} />}
+            </button>
+          </form>
+          <p className="site-gate-hint">{t.sitePasswordHint}</p>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="flash-page">

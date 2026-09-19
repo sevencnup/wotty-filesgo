@@ -1,7 +1,11 @@
 use actix_multipart::Multipart;
 use actix_files::NamedFile;
 use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::body::{BoxBody, MessageBody};
+use actix_web::dev::{ServiceRequest, ServiceResponse};
+use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
+use actix_web::middleware::Next;
+use actix_web::cookie::{time::Duration as CookieDuration, Cookie, SameSite};
 use actix_web_actors::ws;
 use crate::config::AppConfig;
 use crate::crypto;
@@ -13,6 +17,7 @@ use chrono::Datelike;
 use futures_util::StreamExt;
 use parking_lot::RwLock;
 use sanitize_filename::sanitize;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::Write;
@@ -20,16 +25,173 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncReadExt;
+use uuid::Uuid;
 
 pub type FileRecords = Arc<RwLock<HashMap<String, InMemoryFileRecord>>>;
 pub type IpUploadRecords = Arc<RwLock<HashMap<String, IpUploadRecord>>>;
+pub type AuthSessions = Arc<RwLock<HashMap<String, i64>>>;
+pub type AuthAttempts = Arc<RwLock<HashMap<String, AuthAttemptRecord>>>;
 
 pub struct AppState {
     pub db: DbPool,
     pub hub: Addr<HubActor>,
     pub file_records: FileRecords,
     pub ip_upload_records: IpUploadRecords,
+    pub auth_sessions: AuthSessions,
+    pub auth_attempts: AuthAttempts,
     pub server_addr: String,
+}
+
+const AUTH_COOKIE_NAME: &str = "wotty_access_token";
+const AUTH_SESSION_TTL_SECONDS: i64 = 24 * 60 * 60;
+
+#[derive(Debug, Deserialize)]
+pub struct SiteLoginRequest {
+    pub password: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthAttemptRecord {
+    pub count: i32,
+    pub window_started_at: i64,
+}
+
+fn is_site_password_enabled() -> bool {
+    !AppConfig::get().security.site_password.is_empty()
+}
+
+fn is_auth_token_valid(state: &AppState, token: &str) -> bool {
+    if token.is_empty() {
+        return false;
+    }
+
+    let now = now_timestamp();
+    let mut sessions = state.auth_sessions.write();
+    match sessions.get(token).copied() {
+        Some(expires_at) if expires_at > now => true,
+        Some(_) => {
+            sessions.remove(token);
+            false
+        }
+        None => false,
+    }
+}
+
+fn request_is_authenticated(req: &HttpRequest, state: &AppState) -> bool {
+    if !is_site_password_enabled() {
+        return true;
+    }
+
+    req.cookie(AUTH_COOKIE_NAME)
+        .map(|cookie| is_auth_token_valid(state, cookie.value()))
+        .unwrap_or(false)
+}
+
+fn is_login_allowed(state: &AppState, client_ip: &str) -> bool {
+    let limit = AppConfig::get().security.max_login_attempts_per_minute;
+    if limit <= 0 {
+        return true;
+    }
+
+    let now = now_timestamp();
+    let mut attempts = state.auth_attempts.write();
+    let record = attempts.entry(client_ip.to_string()).or_insert(AuthAttemptRecord {
+        count: 0,
+        window_started_at: now,
+    });
+
+    if now - record.window_started_at >= 60 {
+        record.count = 0;
+        record.window_started_at = now;
+    }
+
+    if record.count >= limit {
+        return false;
+    }
+
+    record.count += 1;
+    true
+}
+
+pub async fn site_auth_middleware(
+    req: ServiceRequest,
+    next: Next<impl MessageBody + 'static>,
+) -> Result<ServiceResponse<BoxBody>, Error> {
+    let public_path = matches!(req.path(), "/api/auth/login" | "/api/auth/status");
+    let authenticated = req
+        .app_data::<web::Data<AppState>>()
+        .map(|state| request_is_authenticated(req.request(), state))
+        .unwrap_or(false);
+
+    if public_path || authenticated {
+        return next.call(req).await.map(ServiceResponse::map_into_boxed_body);
+    }
+
+    Ok(req.into_response(
+        HttpResponse::Unauthorized()
+            .json(serde_json::json!({"error": "请先输入站点密码", "authenticated": false}))
+            .map_into_boxed_body(),
+    ))
+}
+
+pub async fn site_auth_status(state: web::Data<AppState>, req: HttpRequest) -> impl Responder {
+    HttpResponse::Ok().json(serde_json::json!({
+        "protected": is_site_password_enabled(),
+        "authenticated": request_is_authenticated(&req, &state),
+    }))
+}
+
+pub async fn site_login(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    body: web::Json<SiteLoginRequest>,
+) -> impl Responder {
+    if !is_site_password_enabled() {
+        return HttpResponse::Ok().json(serde_json::json!({"authenticated": true}));
+    }
+
+    let client_ip = get_client_ip(&req);
+    if !is_login_allowed(&state, &client_ip) {
+        return HttpResponse::TooManyRequests()
+            .json(serde_json::json!({"error": "登录尝试次数过多，请稍后再试"}));
+    }
+
+    if body.password != AppConfig::get().security.site_password {
+        return HttpResponse::Unauthorized()
+            .json(serde_json::json!({"error": "密码错误，请重试"}));
+    }
+
+    let token = Uuid::new_v4().simple().to_string();
+    let expires_at = now_timestamp() + AUTH_SESSION_TTL_SECONDS;
+    state.auth_sessions.write().insert(token.clone(), expires_at);
+
+    let cookie = Cookie::build(AUTH_COOKIE_NAME, token)
+        .path("/")
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .max_age(CookieDuration::seconds(AUTH_SESSION_TTL_SECONDS))
+        .finish();
+
+    HttpResponse::Ok()
+        .cookie(cookie)
+        .json(serde_json::json!({"authenticated": true}))
+}
+
+pub async fn site_logout(state: web::Data<AppState>, req: HttpRequest) -> impl Responder {
+    if let Some(cookie) = req.cookie(AUTH_COOKIE_NAME) {
+        state.auth_sessions.write().remove(cookie.value());
+    }
+
+    let cookie = Cookie::build(AUTH_COOKIE_NAME, "")
+        .path("/")
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .max_age(CookieDuration::seconds(0))
+        .finish();
+
+    HttpResponse::Ok()
+        .cookie(cookie)
+        .json(serde_json::json!({"authenticated": false}))
 }
 
 fn now_timestamp() -> i64 {

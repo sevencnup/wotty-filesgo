@@ -57,6 +57,224 @@
     #f8fbff;
 }
 
+.site-gate {
+  position: relative;
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  overflow: hidden;
+  padding: 24px;
+  color: #17213a;
+  background:
+    radial-gradient(ellipse at 15% 12%, rgba(205, 231, 255, 0.84) 0%, rgba(245, 250, 255, 0) 38%),
+    radial-gradient(ellipse at 90% 88%, rgba(216, 235, 255, 0.88) 0%, rgba(248, 251, 255, 0) 40%),
+    #f8fbff;
+}
+
+.site-gate::before,
+.site-gate::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+}
+
+.site-gate::before {
+  right: -14vw;
+  bottom: -32vh;
+  width: 70vw;
+  height: 74vh;
+  transform: rotate(-33deg);
+  background: linear-gradient(135deg, rgba(226, 241, 255, 0) 15%, rgba(202, 229, 255, 0.72) 50%, rgba(239, 248, 255, 0) 72%);
+}
+
+.site-gate::after {
+  top: -32vh;
+  left: -24vw;
+  width: 64vw;
+  height: 62vh;
+  transform: rotate(19deg);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0) 17%, rgba(227, 241, 255, 0.7) 51%, rgba(255, 255, 255, 0) 76%);
+}
+
+.site-gate-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 430px);
+  padding: 42px 42px 34px;
+  border: 1px solid rgba(220, 230, 243, 0.95);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.91);
+  box-shadow: 0 24px 70px rgba(46, 91, 144, 0.13), 0 2px 4px rgba(46, 91, 144, 0.04);
+  backdrop-filter: blur(20px);
+  animation: site-gate-rise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.site-gate-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 28px 32px;
+  color: #718198;
+  font-size: 14px;
+}
+
+.site-gate-loading .site-gate-logo {
+  width: 42px;
+  height: 42px;
+  animation: site-gate-pulse 1.7s ease-in-out infinite;
+}
+
+.site-gate-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.site-gate-logo {
+  width: 62px;
+  height: 62px;
+  object-fit: cover;
+}
+
+.site-gate-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #287fe3;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.site-gate-card h1 {
+  margin: 25px 0 9px;
+  color: #202b44;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.site-gate-subtitle {
+  margin: 0;
+  color: #7d8ba0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.site-gate-form {
+  margin-top: 27px;
+}
+
+.site-gate-form label {
+  display: block;
+  margin-bottom: 9px;
+  color: #3c4b64;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.site-password-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 51px;
+  padding: 0 12px 0 15px;
+  color: #8b99ad;
+  border: 1px solid #dbe6f2;
+  border-radius: 11px;
+  background: #fbfdff;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.site-password-field:focus-within {
+  border-color: #338df0;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(49, 139, 237, 0.1);
+}
+
+.site-password-field input {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  outline: 0;
+  color: #26334d;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+}
+
+.site-password-field input::placeholder {
+  color: #a1adbd;
+}
+
+.site-password-toggle {
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  color: #8291a5;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.site-password-toggle:hover {
+  color: #287fe3;
+  background: #edf6ff;
+}
+
+.site-gate-error {
+  margin: 10px 0 0;
+  color: #db5e6b;
+  font-size: 12px;
+}
+
+.site-gate-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 50px;
+  margin-top: 18px;
+  color: #fff;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #258af3 0%, #1664dc 100%);
+  box-shadow: 0 9px 18px rgba(29, 122, 232, 0.2);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.site-gate-submit:hover:not(:disabled) {
+  box-shadow: 0 12px 22px rgba(29, 122, 232, 0.27);
+  transform: translateY(-1px);
+}
+
+.site-gate-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.site-gate-hint {
+  margin: 18px 0 0;
+  color: #a0adbd;
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+@keyframes site-gate-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes site-gate-pulse {
+  0%, 100% { opacity: 0.58; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
 .flash-page::before,
 .flash-page::after {
   position: absolute;

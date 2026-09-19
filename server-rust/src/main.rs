@@ -78,6 +78,8 @@ async fn main() -> std::io::Result<()> {
 
     let file_records = Arc::new(RwLock::new(HashMap::new()));
     let ip_upload_records = Arc::new(RwLock::new(HashMap::new()));
+    let auth_sessions = Arc::new(RwLock::new(HashMap::new()));
+    let auth_attempts = Arc::new(RwLock::new(HashMap::new()));
 
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| config.server.port.to_string())
@@ -96,6 +98,8 @@ async fn main() -> std::io::Result<()> {
         hub: hub.clone(),
         file_records,
         ip_upload_records,
+        auth_sessions,
+        auth_attempts,
         server_addr,
     });
 
@@ -114,8 +118,12 @@ async fn main() -> std::io::Result<()> {
             .app_data(app_state.clone())
             .wrap(cors)
             .wrap(middleware::Logger::default())
-            .service(
-                web::scope("/api")
+        .service(
+            web::scope("/api")
+                    .wrap(middleware::from_fn(handlers::site_auth_middleware))
+                    .route("/auth/login", web::post().to(handlers::site_login))
+                    .route("/auth/status", web::get().to(handlers::site_auth_status))
+            .route("/auth/logout", web::post().to(handlers::site_logout))
                     .route("/config", web::get().to(handlers::get_public_config))
                     .route("/upload", web::post().to(handlers::upload_file))
                     .route("/uploads", web::post().to(uploads::create_upload))
@@ -141,7 +149,11 @@ async fn main() -> std::io::Result<()> {
                     .route("/message/{message_id}/status", web::put().to(handlers::update_message_status))
                     .route("/messages/unread", web::get().to(handlers::get_unread_count))
             )
-            .route("/ws", web::get().to(handlers::websocket_route))
+            .service(
+                web::resource("/ws")
+                    .wrap(middleware::from_fn(handlers::site_auth_middleware))
+                    .route(web::get().to(handlers::websocket_route)),
+            )
             .route("/", web::get().to(serve_index))
             .route("/graphic", web::get().to(serve_index))
             .default_service(web::get().to(serve_static))

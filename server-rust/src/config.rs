@@ -11,6 +11,8 @@ pub struct AppConfig {
     #[serde(default)]
     pub rate_limit: RateLimitConfig,
     #[serde(default)]
+    pub security: SecurityConfig,
+    #[serde(default)]
     pub upload: UploadConfig,
 }
 
@@ -46,6 +48,27 @@ impl Default for RateLimitConfig {
             max_uploads_per_day: default_max_uploads_per_day(),
             allowed_ips: Vec::new(),
             trusted_proxy_ips: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct SecurityConfig {
+    #[serde(default)]
+    pub site_password: String,
+    #[serde(default = "default_max_login_attempts_per_minute")]
+    pub max_login_attempts_per_minute: i32,
+}
+
+const fn default_max_login_attempts_per_minute() -> i32 {
+    10
+}
+
+impl Default for SecurityConfig {
+    fn default() -> Self {
+        Self {
+            site_password: String::new(),
+            max_login_attempts_per_minute: default_max_login_attempts_per_minute(),
         }
     }
 }
@@ -102,6 +125,7 @@ impl Default for AppConfig {
                 allowed_ips: Vec::new(),
                 trusted_proxy_ips: Vec::new(),
             },
+            security: SecurityConfig::default(),
             upload: UploadConfig::default(),
         }
     }
