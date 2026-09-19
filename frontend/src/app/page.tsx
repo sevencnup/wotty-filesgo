@@ -372,7 +372,7 @@ export default function HomePage() {
       <header className="site-header">
         <div className="header-inner">
           <div className="brand-lockup">
-            <div className="brand-mark"><Image src="/logo.png" alt="Logo" width={52} height={52} className="brand-logo" /></div>
+            <div className="brand-mark"><Image src="/logo.webp" alt="Logo" width={52} height={52} className="brand-logo" /></div>
             <div>
               <h1>{t.title}</h1>
               <p>{t.subtitle}</p>
@@ -381,11 +381,11 @@ export default function HomePage() {
 
           <nav className="main-nav" aria-label="主导航">
             <button className={`nav-item ${currentTab === 'send' ? 'is-active' : ''}`} onClick={() => setCurrentTab('send')}>
-              <Image src="/1.png" alt="发送文件" width={19} height={19} className="nav-tab-icon" />
+              <Image src="/1.webp" alt="发送文件" width={19} height={19} className="nav-tab-icon" />
               {t.sendTab}
             </button>
             <button className={`nav-item ${currentTab === 'receive' ? 'is-active' : ''}`} onClick={() => setCurrentTab('receive')}>
-              <Image src="/2.png" alt="接收文件" width={19} height={19} className="nav-tab-icon" />
+              <Image src="/2.webp" alt="接收文件" width={19} height={19} className="nav-tab-icon" />
               {t.receiveTab}
             </button>
           </nav>
@@ -406,7 +406,7 @@ export default function HomePage() {
             <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFileSelect(e.target.files)} className="visually-hidden" />
 
             <div className="upload-dropzone" onClick={() => fileInputRef.current?.click()}>
-              <div className="upload-illustration"><Image src="/download.png" alt="上传文件" width={320} height={160} className="upload-image" /></div>
+              <div className="upload-illustration"><Image src="/download.webp" alt="上传文件" width={320} height={160} className="upload-image" /></div>
               <h2>{t.dropzoneText}</h2>
               <p>{t.dropzoneHint}</p>
             </div>

@@ -18,7 +18,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/logo.png" />
+        <link rel="icon" href="/logo.webp" />
       </head>
       <body className={`${manrope.className} min-h-screen`}>
         <PageTransition>
