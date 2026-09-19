@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:rust\"",
     "dev:frontend": "cd frontend && npm install && npm run dev",
-    "dev:rust": "cd server-rust && cargo run",
+    "dev:rust": "set PORT=3203&& cd server-rust && cargo run",
     "build": "npm run build:frontend && npm run build:prep && npm run build:rust",
     "build:frontend": "cd frontend && npm run build",
     "build:prep": "powershell -Command \"Remove-Item -Recurse -Force server-rust/dist -ErrorAction SilentlyContinue; Copy-Item -Recurse frontend/dist server-rust/dist\"",
