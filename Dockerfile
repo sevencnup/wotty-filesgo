@@ -2,7 +2,7 @@
 FROM node:20-slim AS frontend
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund --update-notifier=false
 COPY frontend/ ./
 # next build outputs static export to ./dist (see next.config.js output: 'export')
 RUN npm run build
