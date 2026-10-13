@@ -9,7 +9,7 @@ services:
     volumes:
       - ./data/uploads:/app/uploads
       - ./data/wotty-filesgo.db:/app/wotty-filesgo.db
-      - ./config.yaml:/app/config.yaml
+      - ./server-rust/config.yaml:/app/config.yaml:ro
     environment:
       - GIN_MODE=release
     restart: unless-stopped
