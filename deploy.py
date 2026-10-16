@@ -1,19 +1,21 @@
-import paramiko
+import io
 import os
 import tarfile
-import io
-import time
 
-SERVER = "103.69.128.25"
-PORT = 22011
-USER = "root"
-PASSWORD = "Pa7kcBythDd5cWjK"
-REMOTE_DIR = "/www/wwwroot/wotty/filesgo"
+import paramiko
+
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
+
+def required_env(name):
+    value = os.environ.get(name)
+    if not value:
+        raise SystemExit(f"Missing required environment variable: {name}")
+    return value
+
+
 def filter_tar(tarinfo):
-    # Exclude Rust build artifacts (built inside Docker) and local data
     if "target" in tarinfo.name.split("/"):
         return None
     if "uploads" in tarinfo.name.split("/"):
@@ -21,6 +23,7 @@ def filter_tar(tarinfo):
     if tarinfo.name.endswith(".db"):
         return None
     return tarinfo
+
 
 def make_tar():
     buf = io.BytesIO()
@@ -31,44 +34,63 @@ def make_tar():
     buf.seek(0)
     return buf.read()
 
-print("Creating deployment archive...")
-data = make_tar()
-print(f"Archive size: {len(data) / 1024 / 1024:.1f} MB")
 
-print(f"Connecting to {SERVER}:{PORT}...")
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(SERVER, port=PORT, username=USER, password=PASSWORD, look_for_keys=False, allow_agent=False)
+def main():
+    server = required_env("FILESGO_SERVER")
+    port = int(os.environ.get("FILESGO_SSH_PORT", "22"))
+    user = required_env("FILESGO_SSH_USER")
+    remote_dir = required_env("FILESGO_REMOTE_DIR")
 
-sftp = ssh.open_sftp()
+    print("Creating deployment archive...")
+    data = make_tar()
+    print(f"Archive size: {len(data) / 1024 / 1024:.1f} MB")
 
-print("Uploading archive...")
-remote_tar = f"{REMOTE_DIR}/deploy.tar.gz"
-sftp.putfo(io.BytesIO(data), remote_tar)
-sftp.close()
+    print(f"Connecting to {server}:{port}...")
+    ssh = paramiko.SSHClient()
+    ssh.load_system_host_keys()
+    ssh.connect(
+        server,
+        port=port,
+        username=user,
+        look_for_keys=True,
+        allow_agent=True,
+    )
 
-print("Extracting and deploying on server...")
-commands = [
-    f"cd {REMOTE_DIR} && tar xzf deploy.tar.gz && rm deploy.tar.gz",
-    f"cd {REMOTE_DIR} && mkdir -p data/uploads",
-    f"cp {REMOTE_DIR}/server-rust/config.yaml {REMOTE_DIR}/config.yaml",
-    f"cd {REMOTE_DIR} && docker-compose build --no-cache 2>&1",
-    f"cd {REMOTE_DIR} && docker-compose down 2>&1",
-    f"cd {REMOTE_DIR} && docker-compose up -d 2>&1",
-]
+    try:
+        sftp = ssh.open_sftp()
 
-for cmd in commands:
-    print(f"Running: {cmd}")
-    stdin, stdout, stderr = ssh.exec_command(cmd)
-    exit_code = stdout.channel.recv_exit_status()
-    out = stdout.read().decode()
-    err = stderr.read().decode()
-    if out:
-        print(out)
-    if err:
-        print(f"STDERR: {err}")
-    if exit_code != 0:
-        print(f"Exit code: {exit_code}")
+        print("Uploading archive...")
+        remote_tar = f"{remote_dir}/deploy.tar.gz"
+        sftp.putfo(io.BytesIO(data), remote_tar)
+        sftp.close()
 
-ssh.close()
-print("Deployment complete!")
+        print("Extracting and deploying on server...")
+        commands = [
+            f"cd {remote_dir} && tar xzf deploy.tar.gz && rm deploy.tar.gz",
+            f"cd {remote_dir} && mkdir -p data/uploads",
+            f"cp {remote_dir}/server-rust/config.yaml {remote_dir}/config.yaml",
+            f"cd {remote_dir} && docker-compose build --no-cache 2>&1",
+            f"cd {remote_dir} && docker-compose down 2>&1",
+            f"cd {remote_dir} && docker-compose up -d 2>&1",
+        ]
+
+        for command in commands:
+            print(f"Running: {command}")
+            stdin, stdout, stderr = ssh.exec_command(command)
+            exit_code = stdout.channel.recv_exit_status()
+            out = stdout.read().decode()
+            err = stderr.read().decode()
+            if out:
+                print(out)
+            if err:
+                print(f"STDERR: {err}")
+            if exit_code != 0:
+                print(f"Exit code: {exit_code}")
+    finally:
+        ssh.close()
+
+    print("Deployment complete!")
+
+
+if __name__ == "__main__":
+    main()
